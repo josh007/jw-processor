@@ -123,7 +123,7 @@ publish/
 *.azurePubxml
 
 # NuGet Packages Directory
-packages/
+#!packages/
 ## TODO: If the tool you use requires repositories.config uncomment the next line
 #!packages/repositories.config
 
@@ -185,8 +185,7 @@ FakesAssemblies/
 .LSOverride
 
 # Icon must ends with two \r.
-Icon
-
+Icon
 # Thumbnails
 ._*
 
