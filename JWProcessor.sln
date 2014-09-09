@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmharicBibleProcessor", "AmharicBibleProcessor\AmharicBibleProcessor.csproj", "{B42A02F4-3B02-4EAC-8803-4015D0E7D05C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ePubProcessor", "ePubProcessor\ePubProcessor.csproj", "{7B523B78-80F0-4167-B13A-F711B278A0E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLite", "SQLite\SQLite.csproj", "{40C27EA8-39E6-48D0-8F0E-78405247BF22}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B42A02F4-3B02-4EAC-8803-4015D0E7D05C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B42A02F4-3B02-4EAC-8803-4015D0E7D05C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B42A02F4-3B02-4EAC-8803-4015D0E7D05C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B42A02F4-3B02-4EAC-8803-4015D0E7D05C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B523B78-80F0-4167-B13A-F711B278A0E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B523B78-80F0-4167-B13A-F711B278A0E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B523B78-80F0-4167-B13A-F711B278A0E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B523B78-80F0-4167-B13A-F711B278A0E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40C27EA8-39E6-48D0-8F0E-78405247BF22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40C27EA8-39E6-48D0-8F0E-78405247BF22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40C27EA8-39E6-48D0-8F0E-78405247BF22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40C27EA8-39E6-48D0-8F0E-78405247BF22}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
