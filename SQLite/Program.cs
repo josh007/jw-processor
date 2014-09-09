@@ -18,7 +18,7 @@ namespace SQLite
 
             string sql;
             SQLiteCommand com = new SQLiteCommand(con);
-            JWProcessor
+            
             CreateTables(com);
 
             //PopulateData(com);
