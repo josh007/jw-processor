@@ -1,4 +1,4 @@
-JWProcessor
+jw-processor
 ===========
 
-JW Processor has multiple projects . . . 
+jw-processor has multiple projects . . . 
