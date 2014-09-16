@@ -7,182 +7,248 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
 using System.Xml;
+using HtmlAgilityPack;
+using System.Configuration;
 
 namespace ePubProcessor
 {
     class Program
     {
-        static bool isExited = false;
-        const string aside = "<aside epub:type=footnote>";
-        private static string test()
-        {
-            StringBuilder output = new StringBuilder();
+        static string winzip = "";
 
-            String xmlString =
-                @"<bookstore>
-                    <book genre='autobiography' publicationdate='1981-03-22' ISBN='1-861003-11-0'>
-                        <title>The Autobiography of Benjamin Franklin</title>
-                        <author>
-                            <first-name>Benjamin</first-name>
-                            <last-name>Franklin</last-name>
-                        </author>
-                        <price>8.99</price>
-                    </book>
-                </bookstore>";
-
-            // Create an XmlReader
-            using (XmlReader reader = XmlReader.Create(new StringReader(xmlString)))
-            {
-                reader.ReadToFollowing("book");
-                reader.MoveToFirstAttribute();
-                string genre = reader.Value;
-                output.AppendLine("The genre value: " + genre);
-
-                reader.ReadToFollowing("title");
-                output.AppendLine("Content of the title element: " + reader.ReadElementContentAsString());
-            }
-
-            return output.ToString();
-        }
         static void Main(string[] args)
         {
-            test();
-            return;
-            string fileName = @"w_AM_20140615.epub";
-            //string fileName = @"w_AM_20140715.epub";
-            //string fileName = @"w_AM_20140915.epub";
-            //string fileName = @"w_AM_20141015.epub";
-            //string fileName = @"w_AM_20141115.epub";
+            // read winzip executable from the config file
+            winzip = ConfigurationManager.AppSettings["winzip-executable"];
+            string epubDirectory = ConfigurationManager.AppSettings["epub-source-directory"];
 
+            DirectoryInfo dirr = new DirectoryInfo(epubDirectory);
+            if (!dirr.Exists)
+                return;
+            
+            // Loop to the directory and process all epub files
+            foreach (var file in dirr.GetFiles("*.epub"))
+            {
+                Process_ePubFiles_ForIPad(file.Name);
+            }
+        }
 
-            string winzip = @"c:\Program Files\WinZip\Winzip32.exe";
-            string dirName = fileName.Remove(fileName.Length - 5, 5);
-
-            FileInfo file = new FileInfo(fileName);
-
+        /// <summary>
+        /// Process files 
+        ///     0. deflate the epub
+        ///     1. fix css files
+        ///     2. fix xhtml files for citation reference
+        ///     3. zip the files and rename as epub
+        /// </summary>
+        /// <param name="fileName"></param>
+        private static void Process_ePubFiles_ForIPad(string fileName)
+        {
+            // Check the file exists or not
+            var file = new FileInfo(fileName);
             if (!file.Exists || !File.Exists(winzip))
                 return;
 
+            // Change the file to zip so we can deflate it
             file.MoveTo(file.Name + ".zip");
 
-            var process = Process.Start(winzip, "-min -e -o " + file.Name + " " + dirName);
-            process.Exited += process_Exited;
+            // Get the directory name to be from the file it-self
+            string dirName = fileName.Remove(fileName.Length - 5, 5);
 
-            do
-            {
-                Thread.Sleep(1000);
-            } while (isExited);
+            // deflate the epub for processing
+            UnzipFile(file, dirName);
 
-            DirectoryInfo dir = new DirectoryInfo(dirName + "\\OEBPS");
-
-            if (!dir.Exists)
+            // Process the files in the OEBPS and OEBPS\\CSS folders for both xhtml and css files
+            if (!ProcessFilesIn_OEBPSAndCSS_Folders(dirName))
                 return;
 
-            Console.WriteLine("---------Processing files in OEBPS");
-            foreach (FileInfo fi in dir.GetFiles())
-            {
-                string lines = "";
-                string tmp = "";
-                using (FileStream fs = new FileStream(fi.FullName, FileMode.Open))
-                {
-                    using (StreamReader sr = new StreamReader(fs))
-                    {
-
-                        while (sr.Peek() >= 0)
-                        {
-                            tmp = sr.ReadLine();
-                            if (tmp.Contains(aside))
-                                tmp = ProcessAside(tmp);
-
-                            lines += tmp;
-                        }
-                    }
-                }
-
-                using (FileStream fs = new FileStream(fi.FullName, FileMode.Create))
-                {
-                    using (StreamWriter writer = new StreamWriter(fs))
-                    {
-                        writer.Write(lines);
-                    }
-                }
-
-                Console.WriteLine(@"Accessing {0}", fi.Name);
-            }
-            //Console.ReadLine();
-
-            dir = new DirectoryInfo(dirName + "\\OEBPS\\CSS");
-
-            if (!dir.Exists)
-                return;
-
-            Console.WriteLine("---------Processing files in OEBPS\\CSS");
-            foreach (FileInfo fi in dir.GetFiles())
-            {
-
-                List<string> lines = new List<string>();
-                string tmp = "";
-                using (FileStream fs = new FileStream(fi.FullName, FileMode.Open))
-                {
-                    using (StreamReader sr = new StreamReader(fs))
-                    {
-
-                        while (sr.Peek() >= 0)
-                        {
-
-                            tmp = sr.ReadLine();
-                            if (tmp.Contains("\"Times New Roman\""))
-                                tmp = "\tfont-family: Arial, Helvetica, sans-serif;";
-                            lines.Add(tmp);
-                        }
-                    }
-                }
-
-                using (FileStream fs = new FileStream(fi.FullName, FileMode.Create))
-                {
-                    using (StreamWriter writer = new StreamWriter(fs))
-                    {
-                        foreach (var line in lines)
-                            writer.WriteLine(line);
-                    }
-                }
-
-                Console.WriteLine(@"Accessing {0}", fi.Name);
-            }
-
+            // Remove the zipped file so the new zipped file is created for epub file
             file.Delete();
-            process = Process.Start(winzip, "-min -a -r " + file.Name + " " + dirName + "\\*.*");
-            process.Exited += process_Exited;
 
-            do
+            // re-zip the files
+            ZipFile(file, dirName);
+
+            // Rename the zipped files to epub format ....
+            file.MoveTo(fileName);
+        }
+
+        /// <summary>
+        /// Process the files in the OEBPS (xhtml files)
+        /// and
+        /// Process the files in the OEBPS\\CSS (css files)
+        /// </summary>
+        /// <param name="dirName"></param>
+        /// <returns></returns>
+        private static bool ProcessFilesIn_OEBPSAndCSS_Folders(string dirName)
+        {
+            // Processing files in -----------------OEBPS (xhtml files)----------------------------
+            var dir = new DirectoryInfo(dirName + "\\OEBPS");
+            if (!dir.Exists)
+                return false;
+
+            foreach (FileInfo fi in dir.GetFiles())
             {
-                Thread.Sleep(1000);
-            } while (isExited);
+                if (fi.Extension.ToLower() == ".xhtml")
+                    ProcessCitationReferences_ForIPad(fi.FullName);
+            }
 
-            dir = new DirectoryInfo(dirName);
+            // Processing files in -----------------OEBPS\\CSS (css files)----------------------------
+            dir = new DirectoryInfo(dirName + "\\OEBPS\\CSS");
+            if (!dir.Exists)
+                return false;
 
+            foreach (FileInfo fi in dir.GetFiles())
+            {
+                if (fi.Extension.ToLower() == ".css")
+                    ProcessCSSFixing_ForIPad(fi.FullName);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Start the winzip process to re-zip the files to make-up z epub
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="dirName"></param>
+        private static void ZipFile(FileInfo file, string dirName)
+        {
+            Process winzipProcess = new Process();
+            ProcessStartInfo winzipProcessStartInfo = new ProcessStartInfo(winzip, "-min -a -r " + file.Name + " " + dirName + "\\*.*");
+
+            winzipProcessStartInfo.UseShellExecute = false;
+            winzipProcessStartInfo.RedirectStandardError = true;
+            winzipProcess.StartInfo = winzipProcessStartInfo;
+            winzipProcess.Start();
+
+            winzipProcess.WaitForExit();
+
+            // Remove the expanded directory once the files processed
+            var dir = new DirectoryInfo(dirName);
             if (dir.Exists)
                 dir.Delete(true);
-
-            file.MoveTo(fileName);
-            Console.Read();
         }
 
-        private static string ProcessAside(string tmp)
+        /// <summary>
+        /// Start the winzip process to deflate the epub for processing
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="dirName"></param>
+        private static void UnzipFile(FileInfo file, string dirName)
         {
-            int start = tmp.IndexOf(aside, System.StringComparison.Ordinal);
-            
-            for(int i = start; i<tmp.Length; i++)
+
+            Process winzipProcess = new Process();
+            ProcessStartInfo winzipProcessStartInfo = new ProcessStartInfo(winzip, "-min -e -o " + file.Name + " " + dirName);
+
+            winzipProcessStartInfo.UseShellExecute = false;
+            winzipProcessStartInfo.RedirectStandardError = true;
+            winzipProcess.StartInfo = winzipProcessStartInfo;
+            winzipProcess.Start();
+
+            winzipProcess.WaitForExit();
+        }
+
+        /// <summary>
+        /// This function Fixex the Citation references in the epub file for iPad usage
+        /// </summary>
+        /// <param name="fileName">string filename</param>
+        private static void ProcessCitationReferences_ForIPad(string fileName)
+        {
+            bool isModified = false;
+
+            HtmlDocument doc = new HtmlDocument();
+            doc.Load(fileName);
+            doc.OptionWriteEmptyNodes = true;
+
+            // get all the aside elemets from the xhtml file as this is the citation that needs fixing for IPad readers
+            var asideNodes = doc.DocumentNode.SelectNodes("//aside");
+            if (asideNodes == null)
+                return;
+
+            foreach (HtmlNode aside in asideNodes)
             {
-                //if(tmp[i]==)
+                if (aside.HasAttributes && aside.Attributes.FirstOrDefault().Name == "epub:type")
+                {
+                    foreach (HtmlNode div in aside.ChildNodes.Where(a => a.Name == "div"))
+                    {
+                        foreach (HtmlNode node in div.ChildNodes)
+                        {
+                            if (node.Name == "p" && node.InnerHtml.Trim() != "")
+                            {
+                                node.SetAttributeValue("style", "color:green;font: .85em/1.2em Arial, Helvetica, sans-serif !important;");
+                                isModified = true;
+                            }
+                        }
+                    }
+                }
             }
 
-            return null;
+            if (!isModified)
+                return;
+
+            doc.Save(fileName);
+
+            // The HTMLAgilityPack library while processing the xhtml file removes the crucial ?> closing tag from
+            // (<?xml version="1.0" encoding="utf-8" ?>) and changes it to <?xml version="1.0" encoding="utf-8" />
+            // the code below revrets it back
+
+            string tmp = "";
+            using (FileStream fs = new FileStream(fileName, FileMode.Open))
+            {
+                using (StreamReader sr = new StreamReader(fs))
+                {
+                    while (sr.Peek() >= 0)
+                    {
+                        char c = (char)sr.Read();
+                        if (c == '/' && sr.Peek() == '>')
+                        {
+                            tmp += "?";
+                            break;
+                        }
+                        tmp += c.ToString();
+                    }
+
+                    tmp += sr.ReadToEnd();
+                }
+            }
+
+            using (FileStream fs = new FileStream(fileName, FileMode.Create))
+            {
+                using (StreamWriter writer = new StreamWriter(fs))
+                {
+                    writer.Write(tmp);
+                }
+            }
         }
 
-        static void process_Exited(object sender, EventArgs e)
+        /// <summary>
+        /// This function fixes the CSS for the whole epub file for iPad usage
+        /// </summary>
+        /// <param name="fi"></param>
+        private static void ProcessCSSFixing_ForIPad(string fileName)
         {
-            isExited = true;
+            List<string> lines = new List<string>();
+            string tmp = "";
+            using (FileStream fs = new FileStream(fileName, FileMode.Open))
+            {
+                using (StreamReader sr = new StreamReader(fs))
+                {
+                    while (sr.Peek() >= 0)
+                    {
+                        tmp = sr.ReadLine();
+                        if (tmp.Contains("\"Times New Roman\""))
+                            tmp = "\tfont-family: Arial, Helvetica, sans-serif;";
+                        lines.Add(tmp);
+                    }
+                }
+            }
+
+            using (FileStream fs = new FileStream(fileName, FileMode.Create))
+            {
+                using (StreamWriter writer = new StreamWriter(fs))
+                {
+                    foreach (var line in lines)
+                        writer.WriteLine(line);
+                }
+            }
         }
     }
 }
