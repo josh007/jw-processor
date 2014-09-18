@@ -25,7 +25,7 @@ namespace ePubProcessor
             DirectoryInfo dirr = new DirectoryInfo(epubDirectory);
             if (!dirr.Exists)
                 return;
-            
+                
             // Loop to the directory and process all epub files
             foreach (var file in dirr.GetFiles("*.epub"))
             {
@@ -46,7 +46,7 @@ namespace ePubProcessor
             // Check the file exists or not
             var file = new FileInfo(fileName);
             if (!file.Exists || !File.Exists(winzip))
-                return;
+                return;   
 
             // Change the file to zip so we can deflate it
             file.MoveTo(file.Name + ".zip");
