@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Office.Interop.Word;
@@ -16,6 +17,7 @@ namespace AmharicBibleProcessor
 {
     public partial class frmMain : Form
     {
+        private BibleDataLayer.Bible bible;
         public frmMain()
         {
             InitializeComponent();
@@ -89,6 +91,21 @@ namespace AmharicBibleProcessor
                 MessageBox.Show(ex.Message);
             }
 
+        }
+
+        private void btnProcess_Click(object sender, EventArgs e)
+        {
+            bible = new BibleDataLayer.Bible();
+            bible.rtxt = rtxtMain;
+
+            System.Windows.Forms.Application.DoEvents();
+            bible.BibleParser();
+        }
+
+        private void btnContiune_Click(object sender, EventArgs e)
+        {
+            btnContiune.Text = bible.isPaused ? "Pause" : "Continue";
+            bible.isPaused = bible.isPaused?false:true;
         }
     }
 }
