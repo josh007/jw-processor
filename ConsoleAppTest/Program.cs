@@ -16,7 +16,7 @@ namespace test
             //bible.PopulateTestData();
             //return;
             //bible.CreateBible();
-            //bible.BibleParser(fileName: @"E:\share\joshua.docx", bookName: "joshua");
+           bible.BibleParser(fileName: @"E:\share\joshua.docx", bookName: "joshua");
 
             var xx = bible.GetVerse("joshua", 1, 1);
             string result = "";

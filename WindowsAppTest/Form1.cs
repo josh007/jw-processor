@@ -29,7 +29,7 @@ namespace test2
             Bible bible = new Bible();
             //bible.PopulateTestData();
             //return;
-            bible.CreateBible();
+            //bible.CreateBible();
             bible.BibleParser(fileName: @"E:\share\joshua.docx", bookName: "joshua");
 
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using PDFReader;
 using SQLite;
 using Microsoft.Office.Interop.Word;
 using Application = Microsoft.Office.Interop.Word.Application;
@@ -41,6 +42,8 @@ namespace BibleDataLayer
         public void BibleParser(string fileName = @"E:\share\joshua.docx", string bookName = "joshua")
         {
             TruncateBibleInfoFromDB(bookName);
+            //ImportPDFCleanDataForBook(fileName, bookName);
+
             try
             {
                 // Define file path
@@ -62,22 +65,40 @@ namespace BibleDataLayer
                         ref oNull, ref oNull, ref oNull, ref oNull);
 
                 // then insert the book's chapters . . . 
-                int sequence = 0;
                 bool isChapter = false;
                 bool isVerse = false;
-                bool isFootnote = false;
+                bool isOkToReadPDFRecord = true;
+
+                int sequence = 0;
                 int tmpChapterNo = 0;
                 int tmpVerseNo = 0;
                 int currentVerseNo = 1;
-                double currentSize = 0;
-
+                
                 string text = "";
                 string font = "";
+                string resultFromPDF = "";
+                string resultFromPDFPrev = "";
+                string resultFromPDFUncommited = "";
+
                 double size = 0;
+                double currentSize = 0;
+
                 Chapter chapter = null;
+                int prevRecord = ReadFirstPDFRecord(bookName);
                 // Read each paragraph and show         
                 foreach (Paragraph oPara in Doc.Paragraphs)
                 {
+                    // if there is a chapter change, make sure u read only once for the paragraph as the PDF
+                    // always has two lines made up in one so i need to compensate for that
+                    if (isOkToReadPDFRecord)
+                    {
+                        resultFromPDFUncommited += (resultFromPDFPrev != "" ? resultFromPDFPrev.Remove(0, 1) : resultFromPDF) + "\r\n";
+                        resultFromPDFPrev = resultFromPDF;
+                        resultFromPDF = ReadPDFRecord(prevRecord, out prevRecord);
+                    }
+                    else // reset it for the nxt paragraph read
+                        isOkToReadPDFRecord = true;
+
                     foreach (Range character in oPara.Range.Characters)
                     {
                         bool isDigit = char.IsDigit(character.Text, 0);
@@ -90,7 +111,7 @@ namespace BibleDataLayer
                                 isChapter = true;
                                 tmpChapterNo = Convert.ToInt32(tmpChapterNo.ToString() + character.Text);
                             }
-                            else if (size == 5.5)
+                            else if (size == 5.5) // means it's a verseNo
                             {
                                 isVerse = true;
                                 tmpVerseNo = Convert.ToInt32(tmpVerseNo.ToString() + character.Text);
@@ -109,23 +130,41 @@ namespace BibleDataLayer
                                 if (chapter == null)
                                 {
                                     chapter = InsertChapter(book, tmpChapterNo);
-                                    InsertVerse(chapter, 1, 0, text, font, currentSize);
+                                    //InsertVerse(chapter, 1, 0, text, font, currentSize);
+                                    // this is the first page . . . if it has any text it's already processed
+                                    InsertVerse(chapter, 1, 0, resultFromPDF.Remove(0, 1), font, currentSize);
                                 }
                                 else
                                 {
-                                    InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
-                                    chapter = InsertChapter(book, tmpChapterNo);
+                                    if (Convert.ToInt32(resultFromPDFPrev[0]) != 0) // means its' a heading or something
+                                    {
+                                        int len = resultFromPDFUncommited.Length - resultFromPDFPrev.Length - 1;
+                                        text = resultFromPDFUncommited.Remove(len, resultFromPDFPrev.Length - 1);
+                                        InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
+                                        chapter = InsertChapter(book, tmpChapterNo);
+                                        InsertVerse(chapter, 1, 0, resultFromPDFPrev.Remove(0, 1), font, currentSize);
+                                    }
+                                    else
+                                    {
+                                        text = resultFromPDFUncommited.Remove(0, 1);
+                                        InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
+                                        chapter = InsertChapter(book, tmpChapterNo);
+                                    }
                                 }
                             }
 
                             // means there is some other characters on top of the chapter
                             // which we don't want to process anyways; just process the chapter and continue;
+                            // illegal???????????
                             if(text == "" && tmpChapterNo > 0) 
                                 chapter = InsertChapter(book, tmpChapterNo);
 
                             text = character.Text;
                             font = "";
                             isChapter = false;
+                            isOkToReadPDFRecord = false;
+                            resultFromPDFPrev = "";
+                            resultFromPDFUncommited = "";
                             tmpChapterNo = 0;
                             sequence = 0;
                             currentVerseNo = 1;
@@ -134,6 +173,12 @@ namespace BibleDataLayer
 
                         if (isVerse && text != "")
                         {
+                            int len = resultFromPDFUncommited.Length - 1;
+                            text = resultFromPDFUncommited.Remove(text.Length - 1, len - text.Length);
+                            
+                            resultFromPDFUncommited =  (resultFromPDFUncommited.Length > text.Length ? resultFromPDFUncommited.Remove(0, text.Length - 1 + tmpVerseNo.ToString().Length) : "");
+                            resultFromPDFPrev = "";
+
                             InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
                             sequence = 0;
                             currentVerseNo++;
@@ -147,6 +192,12 @@ namespace BibleDataLayer
 
                         if (font != character.Font.Name && font != "" && text != "")
                         {
+                            int len = resultFromPDFUncommited.Length - 1;
+                            text = resultFromPDFUncommited.Remove(text.Length - 1, len - text.Length);
+
+                            resultFromPDFUncommited = (resultFromPDFUncommited.Length > text.Length ? resultFromPDFUncommited.Remove(0, text.Length - 1 + tmpVerseNo.ToString().Length) : "");
+                            resultFromPDFPrev = "";
+
                             InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
                             text = "";
                         }
@@ -162,10 +213,14 @@ namespace BibleDataLayer
                         {
                             
                         }
+                        else if (size == 6 || size == 7) // means it's a reference
+                        {
+                            
+                        }
                     }
                 }
 
-                InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
+                InsertVerse(chapter, currentVerseNo, ++sequence, resultFromPDFUncommited, font, currentSize);
                 // Quit Word
                 wordApp.Quit(ref oNull, ref oNull, ref oNull);
             }
@@ -173,6 +228,23 @@ namespace BibleDataLayer
             {
                 throw;
             }
+        }
+
+        private string ReadPDFRecord(int prevRecord, out int nextRecord)
+        {
+            return SqlMgr.ReadPDFRecord(prevRecord, out nextRecord);
+        }
+
+        private int ReadFirstPDFRecord(string bookName)
+        {
+            return SqlMgr.ReadFirstPDFRecord(bookName) - 1;// so we can include the first record as well
+        }
+
+        private void ImportPDFCleanDataForBook(string fileName, string bookName)
+        {
+            Console.WriteLine("importing pdf data . .. ");
+            ImportDataToSQLite importer = new ImportDataToSQLite();
+            importer.Import(fileName, bookName);
         }
 
         private void TruncateBibleInfoFromDB(string bookName)

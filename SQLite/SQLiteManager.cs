@@ -77,6 +77,14 @@ namespace SQLite
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
 
+            sql = "CREATE VIEW vw_pdf_book_detail_row AS " +
+                    "SELECT pdfbooks.id AS book_id, pdfbooks.name AS pdf_book_name, " +
+                        "pdfbookdetails.id AS pdfbooks_detail_id, text, ref_type " +
+                            "FROM pdfbooks INNER JOIN pdfbookdetails " +
+                                "ON pdfbooks.id = pdfbookdetails.pdf_book_id ";
+            Command.CommandText = sql;
+            Command.ExecuteNonQuery();
+
             //sql = "CREATE TABLE verse_details(id INTEGER PRIMARY KEY AUTOINCREMENT, sequence INTEGER, verse_id INTEGER, font_id INTEGER," +
             //      "FOREIGN KEY (verse_id) REFERENCES verses(id) ON DELETE CASCADE)";
             //Command.CommandText = sql;
@@ -305,6 +313,35 @@ namespace SQLite
             string sql = "SELECT MAX(verse_no) FROM vw_book_verse_row WHERE book_name = '" + bookName + "' AND chapter_no = " + chapter_no;
             Command.CommandText = sql;
             return Convert.ToInt32(Command.ExecuteScalar());
+        }
+
+        public int ReadFirstPDFRecord(string bookName)
+        {
+            string sql = "SELECT MIN(pdfbooks_detail_id) FROM vw_pdf_book_detail_row WHERE pdf_book_name = '" + bookName + "'";
+            Command.CommandText = sql;
+            return Convert.ToInt32(Command.ExecuteScalar());
+        }
+
+        public string ReadPDFRecord(int prev_record, out int next_record)
+        {
+            string result = "";
+            next_record = prev_record;
+            string sql = "SELECT pdfbooks_detail_id, text, ref_type FROM vw_pdf_book_detail_row WHERE pdfbooks_detail_id > " + prev_record + " ORDER BY pdfbooks_detail_id ASC";          
+            Command.CommandText = sql;
+
+            SQLiteDataReader reader = Command.ExecuteReader();
+            while (reader.Read())
+            {
+                result = reader[1].ToString().Trim();// ck 2 c if empty then skip
+                if(result != "") // 
+                {
+                    next_record = Convert.ToInt32(reader[0]);
+                    result = reader[2] + result;
+                    break;
+                }
+            }
+            reader.Close();
+            return result;
         }
     }
 }

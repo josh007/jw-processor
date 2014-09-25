@@ -50,6 +50,10 @@
     <Compile Include="Verse.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\PDFReader\PDFReader.csproj">
+      <Project>{ae833018-0e95-4589-b353-e356d6af0f9f}</Project>
+      <Name>PDFReader</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SQLite\SQLite.csproj">
       <Project>{40c27ea8-39e6-48d0-8f0e-78405247bf22}</Project>
       <Name>SQLite</Name>

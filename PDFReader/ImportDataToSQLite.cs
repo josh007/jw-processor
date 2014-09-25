@@ -11,7 +11,7 @@ using org.apache.pdfbox.util;
 
 namespace PDFReader
 {
-    class ImportDataToSQLite
+    public class ImportDataToSQLite
     {
         internal SQLiteConnection Connection;
         internal SQLiteCommand Command;
@@ -24,6 +24,7 @@ namespace PDFReader
 
             Command = new SQLiteCommand(Connection);
         }
+
         public enum RefType
         {
             NONE = 0,
@@ -32,7 +33,7 @@ namespace PDFReader
             REF =3
         }
 
-        public string Import(string bookName, string fileName)
+        public string Import(string fileName, string bookName)
         {
             string sql = "DELETE FROM pdfbooks WHERE name = '" + bookName + "'";
             Command.CommandText = sql;
@@ -96,7 +97,7 @@ namespace PDFReader
 
             string source2 = stripper.getText(doc);
 
-            lines = source.Split(new[]{"\r"},StringSplitOptions.None);
+            lines = source2.Split(new[]{"\r"},StringSplitOptions.None);
 
             for (int i = 0; i < lines.Count(); i++)
             {
@@ -106,8 +107,8 @@ namespace PDFReader
 
                     if ((i + 2) < lines.Count() && lines[i + 2].Trim().Replace("\n", "") == "") // definetely a heading
                     {
-                        tmp = lines[i + 1].Replace("\n", "");
-                        InsertBookDetails(pdf_book_id, tmp, RefType.HEADING); // the line next to the one above
+                        tmp = lines[i + 1].Replace("\n", "").Trim();
+                        InsertBookDetails(pdf_book_id, tmp, (tmp == "" ? RefType.NONE:RefType.HEADING)); // the line next to the one above
                     }
                     InsertBookDetails(pdf_book_id, "", RefType.NONE); // current line
                     i += 2; // skip two cause i already processed them . .. 
