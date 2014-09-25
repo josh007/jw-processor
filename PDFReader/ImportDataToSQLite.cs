@@ -79,9 +79,9 @@ namespace PDFReader
                     {
                         tmp = lines[i + 1].Replace("\n", "");
                         InsertBookDetails(pdf_book_id, tmp, RefType.HEADING); // the line next to the one above
+                        InsertBookDetails(pdf_book_id, "", RefType.NONE); // current line
+                        i += 2; // skip two cause i already processed them . .. 
                     }
-                    InsertBookDetails(pdf_book_id, "", RefType.NONE); // current line
-                    i += 2; // skip two cause i already processed them . .. 
                 }
                 else // means normal text
                 {
@@ -126,7 +126,7 @@ namespace PDFReader
         {
             string sql;
             sql = "INSERT INTO pdfbookdetails(pdf_book_id, text, ref_type)VALUES(" // 0: HEADING 1:FOOTNOTE 2:REF
-                  + pdf_book_id + ", '" + txt + "'," + referenceType + ")";
+                  + pdf_book_id + ", '" + txt + "'," + (int)referenceType + ")";
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
         }
