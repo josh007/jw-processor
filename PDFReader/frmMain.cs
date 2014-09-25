@@ -22,13 +22,8 @@ namespace PDFReader
 
         private void btnRead_Click(object sender, EventArgs e)
         {
-            //parse using PDFBox
-
-            PDDocument doc = PDDocument.load(@"e:\share\joshua.pdf");
-            PDFTextStripper stripper = new PDFTextStripper();
-            //stripper.setStartPage(1);
-            //stripper.setEndPage(4);
-            rtxtMain.Text = stripper.getText(doc);
+            ImportDataToSQLite importer = new ImportDataToSQLite();
+            rtxtMain.Text = importer.Import("joshua", @"e:\share\joshua.pdf");
 
         }
     }

@@ -21,7 +21,7 @@ namespace SQLite
         public SQLiteConnection Connection;
         public SQLiteCommand Command;
 
-        public SQLiteManager(string connectionString)// = "Data Source=joshdb.sqlite;Version=3;keys=true;")
+        public SQLiteManager(string connectionString)// = "Data Source=joshdb.sqlite;Version=3;foreign keys=true;")
         {
             Connection = new SQLiteConnection(connectionString);
             if (Connection.State != ConnectionState.Open)
@@ -65,6 +65,18 @@ namespace SQLite
                                     "INNER JOIN fonts ON verses.font_id = fonts.id";
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
+
+            // for text processing data would b imported in these tables to which the text would be extracted
+            sql = "CREATE TABLE pdfbooks(id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(50))";
+            Command.CommandText = sql;
+            Command.ExecuteNonQuery();
+
+            // ref_type is 0: Normal text 1: HEADING 2:FOOTNOTE 3:REF
+            sql = "CREATE TABLE pdfbookdetails(id INTEGER PRIMARY KEY AUTOINCREMENT, pdf_book_id INTEGER, " +
+                  "text VARCHAR(255), ref_type INTEGER, FOREIGN KEY (pdf_book_id) REFERENCES pdfbooks(id) ON DELETE CASCADE)";
+            Command.CommandText = sql;
+            Command.ExecuteNonQuery();
+
             //sql = "CREATE TABLE verse_details(id INTEGER PRIMARY KEY AUTOINCREMENT, sequence INTEGER, verse_id INTEGER, font_id INTEGER," +
             //      "FOREIGN KEY (verse_id) REFERENCES verses(id) ON DELETE CASCADE)";
             //Command.CommandText = sql;

@@ -11,7 +11,7 @@ namespace SQLite
     {
         static void Main(string[] args)
         {
-            SQLiteManager sqlMgr = new SQLiteManager("Data Source=joshdb.sqlite;Version=3;");
+            SQLiteManager sqlMgr = new SQLiteManager("Data Source=joshdb.sqlite;Version=3;foreign keys=true;");
 
             //create the repository
             //sqlMgr.CreateDataBase();
