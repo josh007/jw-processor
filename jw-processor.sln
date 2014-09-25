@@ -11,9 +11,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "verse-extractor", "verse-ex
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bible", "Bible\Bible.csproj", "{A3581003-06D0-4A19-B935-A9A089157D42}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{EB48DF47-01E0-4F65-9992-80E4BD1A653F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleAppTest", "ConsoleAppTest\ConsoleAppTest.csproj", "{EB48DF47-01E0-4F65-9992-80E4BD1A653F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test2", "test2\test2.csproj", "{B6DCFC59-0AAF-4CD2-BFDE-259B27C06F51}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsAppTest", "WindowsAppTest\WindowsAppTest.csproj", "{B6DCFC59-0AAF-4CD2-BFDE-259B27C06F51}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDFReader", "PDFReader\PDFReader.csproj", "{AE833018-0E95-4589-B353-E356D6AF0F9F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,6 +51,10 @@ Global
 		{B6DCFC59-0AAF-4CD2-BFDE-259B27C06F51}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6DCFC59-0AAF-4CD2-BFDE-259B27C06F51}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6DCFC59-0AAF-4CD2-BFDE-259B27C06F51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE833018-0E95-4589-B353-E356D6AF0F9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE833018-0E95-4589-B353-E356D6AF0F9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE833018-0E95-4589-B353-E356D6AF0F9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE833018-0E95-4589-B353-E356D6AF0F9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
