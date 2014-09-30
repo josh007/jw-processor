@@ -363,16 +363,22 @@ namespace SQLite
             return Convert.ToInt32(Command.ExecuteScalar());
         }
 
-        public string ReadPDFRecord(int prev_record, out int next_record)
+        public string ReadPDFRecord(int prev_record, out int next_record, int skiped_records)
         {
             string result = "";
             next_record = prev_record;
-            string sql = "SELECT pdfbooks_detail_id, text, ref_type FROM vw_pdf_book_detail_row WHERE pdfbooks_detail_id > " + prev_record + " ORDER BY pdfbooks_detail_id ASC";          
+            string sql = "SELECT pdfbooks_detail_id, text, ref_type FROM vw_pdf_book_detail_row " +
+                         "WHERE pdfbooks_detail_id > " + prev_record + " ORDER BY pdfbooks_detail_id ASC";          
             Command.CommandText = sql;
 
             SQLiteDataReader reader = Command.ExecuteReader();
             while (reader.Read())
             {
+                if (skiped_records != 0)
+                {
+                    skiped_records--;
+                    continue;
+                }
                 result = reader[1].ToString().Trim();// ck 2 c if empty then skip
                 if(result != "") // 
                 {
@@ -388,6 +394,14 @@ namespace SQLite
         public int GetChapterId(int verse_id)
         {
             string sql = "SELECT chapter_id FROM vw_book_verse_row WHERE verse_id = " + verse_id;
+            Command.CommandText = sql;
+            return Convert.ToInt32(Command.ExecuteScalar());
+        }
+
+        public int GetVerseId(int book_id, int chapter_no, int verse_no)
+        {
+            string sql = "SELECT verse_id FROM vw_book_verse_row WHERE book_id = " + book_id + 
+                            " AND chapter_no = " + chapter_no + " AND verse_no = " + verse_no;
             Command.CommandText = sql;
             return Convert.ToInt32(Command.ExecuteScalar());
         }
