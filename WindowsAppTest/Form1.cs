@@ -30,7 +30,8 @@ namespace test2
             //bible.PopulateTestData();
             //return;
             //bible.CreateBible();
-            bible.BibleParser(fileName: @"E:\share\joshua.docx", bookName: "joshua");
+            
+            //bible.BibleParser(fileName: @"E:\share\joshua.docx", bookName: "joshua");
 
 
             //List<Verse> verseDetails = bible.GetVerse("joshua", 1, 1);
@@ -43,10 +44,6 @@ namespace test2
 
             foreach (var chapter in chapters)
             {
-                richTextBox1.SelectionColor = Color.Blue;
-                richTextBox1.SelectionFont = new System.Drawing.Font("VG2 Main", (float)22, FontStyle.Bold);
-                richTextBox1.AppendText(chapter.ChapterNo.ToString());
-                
                 WriteVerse(chapter.Verses);
             }
 
@@ -55,8 +52,29 @@ namespace test2
         private void WriteVerse(List<Verse> verseDetails)
         {
             int currentVerseNo = 1;
+            bool isChapter = true;
+
             foreach (var verse in verseDetails)
             {
+                // Heading writer anywhere
+                if (verse.Sequene == 0)
+                {
+                    richTextBox1.SelectionColor = Color.Orange;
+                    richTextBox1.SelectionFont = new System.Drawing.Font("VG2 Main", (float)11, FontStyle.Bold);
+                    richTextBox1.AppendText(Environment.NewLine + verse.Text + Environment.NewLine);
+                    continue;
+                }
+                
+                // Chapter # writer
+                if (currentVerseNo == 1 && verse.No == 1 && isChapter)
+                {
+                    richTextBox1.SelectionColor = Color.DeepSkyBlue;
+                    richTextBox1.SelectionFont = new System.Drawing.Font("VG2 Main", (float)22, FontStyle.Bold);
+                    richTextBox1.AppendText(verse.Chapter.ChapterNo.ToString());
+                    isChapter = false;
+                }
+
+                // Verse # writer
                 if (currentVerseNo != verse.No  && verse.Sequene != 0)
                 {
                     currentVerseNo = verse.No;
@@ -72,6 +90,11 @@ namespace test2
                 //Thread.Sleep(1000);
                 Application.DoEvents();
             }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            btnRead_Click(this, new EventArgs());
         }
     }
 }
