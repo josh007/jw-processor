@@ -51,8 +51,14 @@ namespace SQLite
             Command.ExecuteNonQuery();
 
             sql = "CREATE TABLE verses(id INTEGER PRIMARY KEY AUTOINCREMENT, chapter_id INTEGER, verse_no INTEGER, sequence INTEGER, " +
-                  "verse_text VHARCHAR(255), font_id INTEGER, font_size REAL, " +
+                  "verse_text VARCHAR(255), font_id INTEGER, font_size REAL, " +
                   "FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE)";
+            Command.CommandText = sql;
+            Command.ExecuteNonQuery();
+
+            sql = "CREATE TABLE 'references'(id INTEGER PRIMARY KEY  AUTOINCREMENT, chapter_id INTEGER, verse_id INTEGER, text VARCHAR(255), " +
+                  "font_id INTEGER, sequence INTEGER, type INTEGER, FOREIGN KEY (chapter_id) REFERENCES chapter(id) ON DELETE CASCADE, " +
+                  "FOREIGN KEY (verse_id) REFERENCES verses(id) ON DELETE CASCADE)";
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
 
@@ -152,7 +158,39 @@ namespace SQLite
         //    SQLiteConnection.CreateFile("joshdb.sqlite");
         //}
 
-        public void InsertVerse(int chapter_id, int verse_no, int sequence, string verse_text, string font_name, double font_size)
+        public void InsertReference(int chapter_id, int verse_id, int sequence, string ref_text, string font_name, int type)
+        {
+            string sql = "SELECT Id FROM fonts WHERE font_name LIKE '%" + font_name + "%' LIMIT 1";
+            Command.CommandText = sql;
+            SQLiteDataReader reader = Command.ExecuteReader();
+
+            int font_id = 0;
+            while (reader.Read())
+            {
+                font_id = Convert.ToInt32(reader[0]);
+            }
+            reader.Close();
+
+            // means no font insert the new font
+            if (font_id == 0)
+            {
+                sql = "INSERT INTO fonts(font_name)VALUES('" + font_name + "')";
+                Command.CommandText = sql;
+                Command.ExecuteNonQuery();
+
+                Command.CommandText = "SELECT last_insert_rowid()";
+                font_id = Convert.ToInt32(Command.ExecuteScalar());
+            }
+
+
+            sql = "INSERT INTO references(chapter_id, verse_id, sequence, text, font_id, type)VALUES(" +
+                                            chapter_id + "," + verse_id + "," + sequence + ",'" +
+                                            ref_text + "', " + font_id + ", " + type + ")";
+            Command.CommandText = sql;
+            Command.ExecuteNonQuery();
+        }
+
+        public int InsertVerse(int chapter_id, int verse_no, int sequence, string verse_text, string font_name, double font_size)
         {
             string sql = "SELECT Id FROM fonts WHERE font_name LIKE '%" + font_name + "%' LIMIT 1";
             Command.CommandText = sql;
@@ -182,6 +220,9 @@ namespace SQLite
                                             verse_text + "', " + font_id + ", " + font_size + ")";
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
+
+            Command.CommandText = "SELECT last_insert_rowid()";
+            return Convert.ToInt32(Command.ExecuteScalar());
         }
 
         public int InsertChapter(int book_id, int chapter_no)
@@ -196,9 +237,9 @@ namespace SQLite
 
         }
 
-        public int InsertBook(string name)
+        public int InsertBook(string book_name)
         {
-            string sql = "INSERT INTO books(name)VALUES('" + name + "')";
+            string sql = "INSERT INTO books(name)VALUES('" + book_name + "')";
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
 
@@ -206,12 +247,12 @@ namespace SQLite
             return Convert.ToInt32(Command.ExecuteScalar());
         }
 
-        public Dictionary<int, List<VerseResult>> GetChapters(string bookName)
+        public Dictionary<int, List<VerseResult>> GetChapters(string book_name)
         {
             var result = new Dictionary<int, List<VerseResult>>();
 
             string sql = "SELECT chapter_no, verse_no, sequence,verse_text, font_name, font_size " +
-                            "FROM vw_book_verse_row WHERE book_name = '" + bookName + "'";
+                            "FROM vw_book_verse_row WHERE book_name = '" + book_name + "'";
             Command.CommandText = sql;
             SQLiteDataReader reader = Command.ExecuteReader();
 
@@ -244,12 +285,12 @@ namespace SQLite
             return result;
         }
 
-        public List<VerseResult> GetChapter(string bookName, int chapter_no)
+        public List<VerseResult> GetChapter(string book_name, int chapter_no)
         {
             var result = new List<VerseResult>();
 
             string sql = "SELECT verse_no, sequence, verse_text, font_name, font_size " +
-                            "FROM vw_book_verse_row WHERE book_name = '" + bookName + "' AND chapter_no = " + chapter_no;
+                            "FROM vw_book_verse_row WHERE book_name = '" + book_name + "' AND chapter_no = " + chapter_no;
             Command.CommandText = sql;
             SQLiteDataReader reader = Command.ExecuteReader();
             while (reader.Read())
@@ -268,12 +309,12 @@ namespace SQLite
             return result;
         }
 
-        public List<VerseResult> GetVerse(string bookName, int chapter_no, int verse_start, int verse_end)
+        public List<VerseResult> GetVerse(string book_name, int chapter_no, int verse_start, int verse_end)
         {
             var result = new List<VerseResult>();
 
             string sql = "SELECT verse_no, sequence, verse_text, font_name, font_size " +
-                            "FROM vw_book_verse_row WHERE book_name = '" + bookName +
+                            "FROM vw_book_verse_row WHERE book_name = '" + book_name +
                                 "' AND chapter_no = " + chapter_no +
                                     " AND verse_no BETWEEN " + verse_start + " AND " + verse_end;
             Command.CommandText = sql;
@@ -294,30 +335,30 @@ namespace SQLite
             return result;
         }
 
-        public void TruncateBibleInfoFromDb(string bookName)
+        public void TruncateBibleInfoFromDb(string book_name)
         {
-            string sql = "DELETE FROM books WHERE name = '" + bookName + "'";
+            string sql = "DELETE FROM books WHERE name = '" + book_name + "'";
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
         }
 
-        public int GetNoOfChapters(string bookName)
+        public int GetNoOfChapters(string book_name)
         {
-            string sql = "SELECT MAX(chapter_no) FROM vw_book_verse_row WHERE book_name = '" + bookName + "'";
+            string sql = "SELECT MAX(chapter_no) FROM vw_book_verse_row WHERE book_name = '" + book_name + "'";
             Command.CommandText = sql;
             return Convert.ToInt32(Command.ExecuteScalar());
         }
 
-        public int GetNoOfVerses(string bookName, int chapter_no)
+        public int GetNoOfVerses(string book_name, int chapter_no)
         {
-            string sql = "SELECT MAX(verse_no) FROM vw_book_verse_row WHERE book_name = '" + bookName + "' AND chapter_no = " + chapter_no;
+            string sql = "SELECT MAX(verse_no) FROM vw_book_verse_row WHERE book_name = '" + book_name + "' AND chapter_no = " + chapter_no;
             Command.CommandText = sql;
             return Convert.ToInt32(Command.ExecuteScalar());
         }
 
-        public int ReadFirstPDFRecord(string bookName)
+        public int ReadFirstPDFRecord(string book_name)
         {
-            string sql = "SELECT MIN(pdfbooks_detail_id) FROM vw_pdf_book_detail_row WHERE pdf_book_name = '" + bookName + "'";
+            string sql = "SELECT MIN(pdfbooks_detail_id) FROM vw_pdf_book_detail_row WHERE pdf_book_name = '" + book_name + "'";
             Command.CommandText = sql;
             return Convert.ToInt32(Command.ExecuteScalar());
         }
@@ -342,6 +383,13 @@ namespace SQLite
             }
             reader.Close();
             return result;
+        }
+
+        public int GetChapterId(int verse_id)
+        {
+            string sql = "SELECT chapter_id FROM vw_book_verse_row WHERE verse_id = " + verse_id;
+            Command.CommandText = sql;
+            return Convert.ToInt32(Command.ExecuteScalar());
         }
     }
 }
