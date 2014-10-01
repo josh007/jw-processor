@@ -12,7 +12,7 @@ namespace test
         static void Main(string[] args)
         {
 
-            Bible bible = new Bible();
+            Bible bible = new Bible(ConnectionString: "Data Source=joshdb.sqlite;Version=3;foreign keys=true;");
             //bible.PopulateTestData();
             //return;
             //bible.CreateBible();

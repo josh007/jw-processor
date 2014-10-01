@@ -22,16 +22,16 @@ namespace BibleDataLayer
 
         public List<Book> Books { get; set; }
 
-        private string tmpUncommitedRef;
+        private string tmpUncommitedRefFontChangeCharacter = "";
+        private string tmpUncommitedRef = "";
         private int tmpSequence = 0;
         private int tmpVerseId = 0;
         private bool isFootNote;
-        private string tmpUncommitedRefFontChangeCharacter;
         private bool isRefUncomitted;
 
-        public Bible()
+        public Bible(string ConnectionString)
         {
-            SqlMgr = new SQLiteManager("Data Source=joshdb1.sqlite;Version=3;foreign keys=true;");
+            SqlMgr = new SQLiteManager(ConnectionString);
         }
 
         public void LoadBible()
@@ -54,252 +54,154 @@ namespace BibleDataLayer
             SqlMgr.PopulateTestData();
         }
 
-        public void BibleParser(string fileName = @"E:\share\joshua.docx", string bookName = "joshua")
+        public void BibleParser(string fileName, string bookName)
         {
             TruncateBibleInfoFromDB(bookName);
             //ImportPDFCleanDataForBook(fileName, bookName);
 
-            try
+            // Define file path
+            var wordApp = new Application();
+
+            // first deal with the book
+            Book book = InsertBook(bookName);
+
+            // Create objects for passing
+            object oFile = fileName;
+            object oNull = System.Reflection.Missing.Value;
+            object oReadOnly = true;
+
+            // Open Document
+
+            var Doc = wordApp.Documents.Open(ref oFile, ref oNull,
+                    ref oReadOnly, ref oNull, ref oNull, ref oNull, ref oNull,
+                    ref oNull, ref oNull, ref oNull, ref oNull, ref oNull,
+                    ref oNull, ref oNull, ref oNull, ref oNull);
+
+            // then insert the book's chapters . . . 
+            bool isChapter = false;
+            bool isVerse = false;
+            bool isOkToReadPDFRecord = true;
+
+            int sequence = 0;
+            int tmpChapterNo = 0;
+            int tmpVerseNo = 0;
+            int currentVerseNo = 1;
+            int skipedLines = 0;
+
+            string text = "";
+            string font = "";
+            string resultFromPDF = "";
+            string resultFromPDFPrev = "";
+            string resultFromPDFUncommited = "";
+
+            double size = 0;
+            double currentSize = 0;
+
+            Chapter chapter = null;
+            Dictionary<int, string> footNotes = new Dictionary<int, string>();
+            LinkedList<string> refDetails = new LinkedList<string>();
+
+            int prevRecord = ReadFirstPDFRecord(bookName);
+            string tmpFromPDF;
+
+            // Read each paragraph and show         
+            foreach (Paragraph oPara in Doc.Paragraphs)
             {
-                // Define file path
-                var wordApp = new Application();
-
-                // first deal with the book
-                Book book = InsertBook(bookName);
-
-                // Create objects for passing
-                object oFile = fileName;
-                object oNull = System.Reflection.Missing.Value;
-                object oReadOnly = true;
-
-                // Open Document
-
-                var Doc = wordApp.Documents.Open(ref oFile, ref oNull,
-                        ref oReadOnly, ref oNull, ref oNull, ref oNull, ref oNull,
-                        ref oNull, ref oNull, ref oNull, ref oNull, ref oNull,
-                        ref oNull, ref oNull, ref oNull, ref oNull);
-
-                // then insert the book's chapters . . . 
-                bool isChapter = false;
-                bool isVerse = false;
-                bool isOkToReadPDFRecord = true;
-
-                int sequence = 0;
-                int tmpChapterNo = 0;
-                int tmpVerseNo = 0;
-                int currentVerseNo = 1;
-                int skipedLines = 0;
-
-                string text = "";
-                string font = "";
-                string resultFromPDF = "";
-                string resultFromPDFPrev = "";
-                string resultFromPDFUncommited = "";
-
-                double size = 0;
-                double currentSize = 0;
-
-                Chapter chapter = null;
-                Dictionary<int, string> footNotes = new Dictionary<int, string>();
-                LinkedList<string> refDetails = new LinkedList<string>();
-
-                int prevRecord = ReadFirstPDFRecord(bookName);
-                string tmpFromPDF;
-
-                // Read each paragraph and show         
-                foreach (Paragraph oPara in Doc.Paragraphs)
+                // if there is a chapter change, make sure u read only once for the paragraph as the PDF
+                // always has two lines made up in one so i need to compensate for that
+                if (isOkToReadPDFRecord)
                 {
-                    // if there is a chapter change, make sure u read only once for the paragraph as the PDF
-                    // always has two lines made up in one so i need to compensate for that
-                    if (isOkToReadPDFRecord)
+                    tmpFromPDF = ReadPDFRecord(prevRecord, out prevRecord, skipedLines);
+                    skipedLines = 0;
+
+                    if (resultFromPDFUncommited != "" && resultFromPDFUncommited.Length - 1 != text.Length)
+                        text = resultFromPDFUncommited.Remove(resultFromPDFUncommited.Length - 1, 1);
+
+                    if (resultFromPDFUncommited != "")
                     {
-                        tmpFromPDF = ReadPDFRecord(prevRecord, out prevRecord, skipedLines);
-                        skipedLines = 0;
-
-                        if (resultFromPDFUncommited != "" && resultFromPDFUncommited.Length - 1 != text.Length)
-                            text = resultFromPDFUncommited.Remove(resultFromPDFUncommited.Length - 1, 1);
-
-                        if (resultFromPDFUncommited != "" )
-                        {
-                            resultFromPDFUncommited = resultFromPDFUncommited.Remove(resultFromPDFUncommited.Length - 1, 1) +
-                                                        tmpFromPDF.Remove(0, 1) + "\r\n";
-                        }
-                        else if (resultFromPDFUncommited == "" && resultFromPDF != "" )
-                        {
-                            resultFromPDFUncommited += resultFromPDF + "\r\n";
-                        }
-                        else if (resultFromPDFPrev != "")
-                        {
-                            throw new Exception(); // illegal
-                            resultFromPDFUncommited += resultFromPDFPrev.Remove(0, 1);
-                        }
-
-                        resultFromPDFPrev = resultFromPDF;
-                        resultFromPDF = tmpFromPDF;
+                        resultFromPDFUncommited = resultFromPDFUncommited.Remove(resultFromPDFUncommited.Length - 1, 1) +
+                                                    tmpFromPDF.Remove(0, 1) + "\r\n";
                     }
-                    else // reset it for the nxt paragraph read
-                        isOkToReadPDFRecord = true;
-
-                    foreach (Range character in oPara.Range.Characters)
+                    else if (resultFromPDFUncommited == "" && resultFromPDF != "")
                     {
-                        bool isDigit = char.IsDigit(character.Text, 0);
-                        size = character.Font.Size;
+                        resultFromPDFUncommited += resultFromPDF + "\r\n";
+                    }
+                    else if (resultFromPDFPrev != "")
+                    {
+                        throw new Exception(); // illegal
+                        resultFromPDFUncommited += resultFromPDFPrev.Remove(0, 1);
+                    }
 
-                        if (isDigit)
+                    resultFromPDFPrev = resultFromPDF;
+                    resultFromPDF = tmpFromPDF;
+                }
+                else // reset it for the nxt paragraph read
+                    isOkToReadPDFRecord = true;
+
+                foreach (Range character in oPara.Range.Characters)
+                {
+                    bool isDigit = char.IsDigit(character.Text, 0);
+                    size = character.Font.Size;
+
+                    if (isDigit)
+                    {
+                        #region
+
+                        if (size > 25) // this means it's a chapterNo
                         {
-                            #region
-
-                            if (size > 25) // this means it's a chapterNo
-                            {
-                                isChapter = true;
-                                tmpChapterNo = Convert.ToInt32(tmpChapterNo.ToString() + character.Text);
-                            }
-                            else if (size == 5.5) // means it's a verseNo
-                            {
-                                isVerse = true;
-                                tmpVerseNo = Convert.ToInt32(tmpVerseNo.ToString() + character.Text);
-                            }
-                            else if (size == 7) // means a reference coming b4 z foot-note
-                            {
-
-                            }
-                            continue;
-
-                            #endregion
+                            isChapter = true;
+                            tmpChapterNo = Convert.ToInt32(tmpChapterNo.ToString() + character.Text);
+                        }
+                        else if (size == 5.5) // means it's a verseNo
+                        {
+                            isVerse = true;
+                            tmpVerseNo = Convert.ToInt32(tmpVerseNo.ToString() + character.Text);
+                        }
+                        else if (size == 7) // means a reference coming b4 z foot-note
+                        {
 
                         }
+                        continue;
 
-                        if (isChapter)
+                        #endregion
+
+                    }
+
+                    if (isChapter)
+                    {
+                        #region
+
+                        // Process remaining reference details ...
+                        if (refDetails.Count > 0)
                         {
-                            #region
+                            InsertRefDetails(refDetails, chapter);
+                        }
 
-                            // Process remaining reference details ...
-                            if (refDetails.Count > 0)
+                        if (text != "")
+                        {
+                            if (chapter == null)
                             {
-                                InsertRefDetails(refDetails, chapter);
+                                chapter = InsertChapter(book, tmpChapterNo);
+                                //InsertVerse(chapter, 1, 0, text, font, currentSize);
+                                // this is the first page . . . if it has any text it's already processed
+                                InsertVerse(chapter, 1, 0, resultFromPDFUncommited.Remove(0, 1), font, currentSize);
                             }
-
-                            if (text != "")
+                            else
                             {
-                                if (chapter == null)
+                                // means everything is ok so u can simply replace it
+                                if (resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length).Length == text.Length)
                                 {
-                                    chapter = InsertChapter(book, tmpChapterNo);
-                                    //InsertVerse(chapter, 1, 0, text, font, currentSize);
-                                    // this is the first page . . . if it has any text it's already processed
-                                    InsertVerse(chapter, 1, 0, resultFromPDFUncommited.Remove(0, 1), font, currentSize);
+                                    text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
+                                    text = text.Remove(0, resultFromPDFPrev.Length + 1);
                                 }
                                 else
+                                // means something is wrong; 1. additional character in text or additional character in resultFromPDFUncommited
                                 {
-                                    // means everything is ok so u can simply replace it
-                                    if (resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length).Length == text.Length)
-                                        text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - 1 - text.Length - 1);
-                                    else // means something is wrong; 1. additional character in text or additional character in resultFromPDFUncommited
-                                    {
-                                        #region 
+                                    #region
 
-                                        // find the number as this is verse change; forward looking
-                                        int index = 0;
-                                        for (int i = text.Length - 1; i < resultFromPDFUncommited.Length; i++)
-                                        {
-                                            if (char.IsDigit(resultFromPDFUncommited, i))
-                                            {
-                                                index = i;
-                                                break;
-                                            }
-                                        }
-                                        // find the number as this is verse change; backward looking
-                                        if (index == 0)
-                                        {
-                                            for (int i = text.Length - 1; i > 0; i--)
-                                            {
-                                                if (char.IsDigit(resultFromPDFUncommited, i))
-                                                {
-                                                    index = i;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        if (index == 0)
-                                            throw new Exception("this shouldn't happen something is really wrong");
-
-                                        text = resultFromPDFUncommited.Remove(index,
-                                                                              resultFromPDFUncommited.Length - 1 -
-                                                                              text.Length - 1); 
-
-                                        #endregion
-                                    }
-
-                                    // means this is a heading otherwise it's not a heading
-                                    if (Convert.ToInt32(resultFromPDFPrev[0]) == (int)RefType.HEADING) // means its' a heading
-                                    {
-                                        if (text != "")
-                                        {
-                                            text = text.Remove(text.Length - resultFromPDFPrev.Length, resultFromPDFPrev.Length);
-                                            InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
-                                        }
-                                        
-                                        chapter = InsertChapter(book, tmpChapterNo);
-                                        InsertVerse(chapter, 1, 0, resultFromPDFPrev, font, currentSize);
-                                    }
-                                    else
-                                    {
-                                        InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
-                                        chapter = InsertChapter(book, tmpChapterNo);
-                                    }
-                                }
-                            }
-
-                            // means there is some other characters on top of the chapter
-                            // which we don't want to process anyways; just process the chapter and continue;
-                            // illegal???????????
-                            if (text == "" && tmpChapterNo > 0)
-                                chapter = InsertChapter(book, tmpChapterNo);
-
-                            text = character.Text;
-                            font = "";
-                            isChapter = false;
-                            isOkToReadPDFRecord = false;
-                            resultFromPDFPrev = "";
-                            resultFromPDFUncommited = resultFromPDF.Remove(0, 2).Remove(28, 1).Insert(28, "\r") + "\r\n";
-                            tmpChapterNo = 0;
-                            sequence = 0;
-                            currentVerseNo = 1;
-                            continue;
-
-                            #endregion
-                        }
-
-                        if (isVerse && text != "")
-                        {
-                            #region
-
-                            // Process remaining reference details ...
-                            if (refDetails.Count > 0)
-                            {
-                                InsertRefDetails(refDetails, chapter);
-                            }
-                            // means everything is ok so u can simply replace it
-                            if (resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length).Length == text.Length)
-                                text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - 1 - text.Length - 1);
-                            else// means something is wrong; 1. additional character in text or additional character in resultFromPDFUncommited
-                            {
-                                // find the number as this is verse change; forward looking
-                                #region 
-
-                                int index = 0;
-                                for (int i = text.Length - 1; i < resultFromPDFUncommited.Length; i++)
-                                {
-                                    if (char.IsDigit(resultFromPDFUncommited, i))
-                                    {
-                                        index = i;
-                                        break;
-                                    }
-                                }
-                                // find the number as this is verse change; backward looking
-                                if (index == 0)
-                                {
-                                    for (int i = text.Length - 1; i > 0; i--)
+                                    // find the number as this is verse change; forward looking
+                                    int index = 0;
+                                    for (int i = text.Length - 1; i < resultFromPDFUncommited.Length; i++)
                                     {
                                         if (char.IsDigit(resultFromPDFUncommited, i))
                                         {
@@ -307,135 +209,249 @@ namespace BibleDataLayer
                                             break;
                                         }
                                     }
+                                    // find the number as this is verse change; backward looking
+                                    if (index == 0)
+                                    {
+                                        for (int i = text.Length - 1; i > 0; i--)
+                                        {
+                                            if (char.IsDigit(resultFromPDFUncommited, i))
+                                            {
+                                                index = i;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    if (index == 0)
+                                        throw new Exception("this shouldn't happen something is really wrong");
+
+                                    text = resultFromPDFUncommited.Remove(index,
+                                                                          resultFromPDFUncommited.Length - 1 -
+                                                                          text.Length - 1);
+
+                                    #endregion
                                 }
 
-                                if (index == 0)
-                                    throw new Exception("this shouldn't happen something is really wrong");
+                                // means this is a heading otherwise it's not a heading
+                                if (Convert.ToInt32(resultFromPDFPrev[0].ToString()) == (int)RefType.HEADING) // means its' a heading
+                                {
+                                    if (text != "")
+                                    {
+                                        text = text.Remove(text.Length - resultFromPDFPrev.Length, resultFromPDFPrev.Length);
+                                        InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
+                                    }
 
-                                text = resultFromPDFUncommited.Remove(index,
-                                                                      resultFromPDFUncommited.Length - 1 - text.Length -
-                                                                      1); 
-
-                                #endregion
+                                    chapter = InsertChapter(book, tmpChapterNo);
+                                    InsertVerse(chapter, 1, 0, resultFromPDFPrev.Remove(0, 1), font, currentSize);
+                                }
+                                else
+                                {
+                                    InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
+                                    chapter = InsertChapter(book, tmpChapterNo);
+                                }
                             }
-
-                            resultFromPDFUncommited = (resultFromPDFUncommited.Length > text.Length
-                                                           ? resultFromPDFUncommited.Remove(0, text.Length - 2 + tmpVerseNo.ToString().Length) : "");
-
-                            //means it's inbetween title
-                            if (resultFromPDFPrev[0] == (int) RefType.HEADING)
-                            {
-                                resultFromPDFUncommited = resultFromPDFUncommited.Remove(resultFromPDFUncommited.Length - resultFromPDFPrev.Length,
-                                    resultFromPDFPrev.Length - 1);
-
-                                InsertVerse(chapter, currentVerseNo, ++sequence, resultFromPDFUncommited, font, currentSize);
-                                InsertVerse(chapter, currentVerseNo + 1, 0, resultFromPDFPrev, font, currentSize);
-                                resultFromPDFUncommited = resultFromPDF.Remove(0, tmpVerseNo.ToString().Length);
-                            }
-                            else
-                            {
-                                InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
-                            }
-
-                            sequence = 0;
-                            currentVerseNo++;
-                            resultFromPDFPrev = "";
-                            text = character.Text;
-                            font = character.Font.Name;
-                            isVerse = false;
-                            tmpVerseNo = 0;
-
-                            continue;
-
-                            #endregion
                         }
 
-                        if (font != character.Font.Name && font != "" && text != "")
+                        // means there is some other characters on top of the chapter
+                        // which we don't want to process anyways; just process the chapter and continue;
+                        // illegal???????????
+                        //if (text == "")
+                        //    throw new Exception(); //illegal
+
+                        //if (text == "" && tmpChapterNo > 0)
+                        //    chapter = InsertChapter(book, tmpChapterNo);
+
+                        text = character.Text;
+                        font = "";
+                        isChapter = false;
+                        isOkToReadPDFRecord = false;
+                        resultFromPDFPrev = "";
+                        resultFromPDFUncommited = resultFromPDF.Remove(0, 2).Remove(28, 1).Insert(28, "\r") + "\r\n";
+                        tmpChapterNo = 0;
+                        sequence = 0;
+                        currentVerseNo = 1;
+                        continue;
+
+                        #endregion
+                    }
+
+                    if (isVerse && text != "")
+                    {
+                        #region
+
+                        // Process remaining reference details ...
+                        if (refDetails.Count > 0)
                         {
+                            InsertRefDetails(refDetails, chapter);
+                        }
+                        // means everything is ok so u can simply replace it
+                        if (resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length).Length == text.Length)
+                            text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - 1 - text.Length - 1);
+                        else// means something is wrong; 1. additional character in text or additional character in resultFromPDFUncommited
+                        {
+                            // find the number as this is verse change; forward looking
                             #region
 
-                            if (resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length).Length == text.Length)
-                                text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
-                            else // means there is a problem??????? TODO: what will happen . . . .
+                            int index = 0;
+                            for (int i = text.Length - 1; i < resultFromPDFUncommited.Length; i++)
                             {
-                                text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
+                                if (char.IsDigit(resultFromPDFUncommited, i))
+                                {
+                                    index = i;
+                                    break;
+                                }
+                            }
+                            // find the number as this is verse change; backward looking
+                            if (index == 0)
+                            {
+                                for (int i = text.Length - 1; i > 0; i--)
+                                {
+                                    if (char.IsDigit(resultFromPDFUncommited, i))
+                                    {
+                                        index = i;
+                                        break;
+                                    }
+                                }
                             }
 
-                            resultFromPDFUncommited = (resultFromPDFUncommited.Length > text.Length ? resultFromPDFUncommited.Remove(0, text.Length) : "");
-                            resultFromPDFPrev = "";
+                            if (index == 0)
+                                throw new Exception("this shouldn't happen something is really wrong");
 
+                            text = resultFromPDFUncommited.Remove(index,
+                                                                  resultFromPDFUncommited.Length - 1 - text.Length -
+                                                                  1);
+
+                            #endregion
+                        }
+
+                        resultFromPDFUncommited = (resultFromPDFUncommited.Length > text.Length
+                                                       ? resultFromPDFUncommited.Remove(0, text.Length - 2 + tmpVerseNo.ToString().Length) : "");
+
+                        //means it's inbetween title
+                        if (resultFromPDFPrev != "" && Convert.ToInt32(resultFromPDFPrev[0].ToString()) == (int)RefType.HEADING)
+                        {
+                            resultFromPDFUncommited = resultFromPDFUncommited.Remove(resultFromPDFUncommited.Length - resultFromPDFPrev.Length,
+                                resultFromPDFPrev.Length - 1);
+
+                            InsertVerse(chapter, currentVerseNo, ++sequence, resultFromPDFUncommited, font, currentSize);
+                            InsertVerse(chapter, currentVerseNo + 1, 0, resultFromPDFPrev, font, currentSize);
+                            resultFromPDFUncommited = resultFromPDF.Remove(0, tmpVerseNo.ToString().Length);
+                        }
+                        else
+                        {
                             InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
-                            text = "";
-
-                            #endregion
                         }
 
-                        if (size == 9.5 || size == 9.0) // this is the main text and verse #s
-                        {
-                            text += character.Text;
-                            font = character.Font.Name;
-                            currentSize = size;
-                        }
-                        else if (size == 5.5) // means it's a foot-note marker; it can't b a verse cause verse's has been handled already @ z top
-                        {
-                            #region 
+                        sequence = 0;
+                        currentVerseNo++;
+                        resultFromPDFPrev = "";
+                        text = character.Text;
+                        font = character.Font.Name;
+                        isVerse = false;
+                        tmpVerseNo = 0;
 
-                            if (resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length).Length == text.Length)
-                                text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
-                            else // means there is a problem??????? TODO: what will happen . . . .
-                            {
-                                text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
-                            }
+                        continue;
 
-                            resultFromPDFUncommited = (resultFromPDFUncommited.Length > text.Length ? resultFromPDFUncommited.Remove(0, text.Length) : "");
-                            resultFromPDFPrev = "";
-
-                            InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize); // verse b4 z foot-note character
-                            int verse_id = InsertVerse(chapter, currentVerseNo, ++sequence, character.Text, character.Font.Name, size); // the foot-note character
-                            footNotes.Add(verse_id, character.Text);
-                            text = ""; 
-
-                            #endregion
-                        }
-                        else if (size == 3.5 || size == 6 || size == 7 || size == 11 || size == 14) // means it's a reference foot-note or other
-                        {
-                            #region 
-
-                            if (resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length).Length == text.Length)
-                                text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
-                            else // means there is a problem??????? TODO: what will happen . . . .
-                                text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
-
-                            InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize); // verse b4 z foot-note character
-                            resultFromPDFUncommited = "";
-                            resultFromPDFPrev = "";
-                            text = "";
-
-                            skipedLines = ProcessReference(oPara, resultFromPDF, chapter, footNotes, size, refDetails);
-                            break;
-
-                            #endregion
-                        }
-
+                        #endregion
                     }
+
+                    if (font != character.Font.Name && font != "" && text != "")
+                    {
+                        #region
+
+                        if (resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length).Length == text.Length)
+                            text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
+                        else // means there is a problem??????? TODO: what will happen . . . .
+                        {
+                            text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
+                        }
+
+                        if(text == "")
+                            throw  new Exception(); //illegal
+
+                        resultFromPDFUncommited = (resultFromPDFUncommited.Length > text.Length ? resultFromPDFUncommited.Remove(0, text.Length) : "");
+                        resultFromPDFPrev = "";
+
+                        InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize);
+                        text = "";
+
+                        #endregion
+                    }
+
+                    if (size == 9.5 || size == 9.0) // this is the main text and verse #s
+                    {
+                        text += character.Text;
+                        font = character.Font.Name;
+                        currentSize = size;
+                    }
+                    else if (size == 5.5) // means it's a foot-note marker; it can't b a verse cause verse's has been handled already @ z top
+                    {
+                        #region
+
+                        if (text.Trim() == "")
+                        {
+                            text = " ";
+                            continue;
+                        }
+
+                        if (resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length).Length == text.Length)
+                            text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
+                        else // means there is a problem??????? TODO: what will happen . . . .
+                        {
+                            text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
+                        }
+
+                        if (text == "")
+                            throw new Exception(); //illegal
+
+                        resultFromPDFUncommited = (resultFromPDFUncommited.Length > text.Length ? resultFromPDFUncommited.Remove(0, text.Length) : "");
+                        resultFromPDFPrev = "";
+
+                        InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize); // verse b4 z foot-note character
+                        int verse_id = InsertVerse(chapter, currentVerseNo, ++sequence, character.Text, character.Font.Name, size); // the foot-note character
+                        footNotes.Add(verse_id, character.Text);
+                        text = "";
+                        resultFromPDFUncommited = resultFromPDFUncommited.Remove(0, 1);
+
+                        #endregion
+                    }
+                    else if (size == 3.5 || size == 6 || size == 7 || size == 11 || size == 14) // means it's a reference foot-note or other
+                    {
+                        #region
+
+                        if (resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length).Length == text.Length)
+                            text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
+                        else // means there is a problem??????? TODO: what will happen . . . .
+                            text = resultFromPDFUncommited.Remove(text.Length, resultFromPDFUncommited.Length - text.Length);
+
+                        if (text != "")
+                            InsertVerse(chapter, currentVerseNo, ++sequence, text, font, currentSize); // verse b4 z foot-note character
+
+                        resultFromPDFUncommited = "";
+                        resultFromPDFPrev = "";
+                        text = "";
+
+                        skipedLines = ProcessReference(oPara, resultFromPDF, chapter, footNotes, size, refDetails);
+                        break;
+
+                        #endregion
+                    }
+
                 }
-
-                // Process remaining reference details if exists...
-                if (refDetails.Count > 0)
-                {
-                    InsertRefDetails(refDetails, chapter);
-                }
-
-                if (resultFromPDFUncommited != "")
-                    InsertVerse(chapter, currentVerseNo, ++sequence, resultFromPDFUncommited, font, currentSize);
-
-                // Quit Word
-                wordApp.Quit(ref oNull, ref oNull, ref oNull);
             }
-            catch (Exception ex)
+
+            // Process remaining reference details if exists...
+            if (refDetails.Count > 0)
             {
-                throw;
+                InsertRefDetails(refDetails, chapter);
             }
+
+            if (resultFromPDFUncommited != "")
+                InsertVerse(chapter, currentVerseNo, ++sequence, resultFromPDFUncommited, font, currentSize);
+
+            // Quit Word
+            wordApp.Quit(ref oNull, ref oNull, ref oNull);
+
         }
 
         private int ProcessReference(Paragraph text, string resultFromPDF, Chapter chapter, Dictionary<int, string> footNotes, double size, LinkedList<string> refDetails)
@@ -491,7 +507,7 @@ namespace BibleDataLayer
                 else // means a verse detail ref for the prev line
                     refDetails.AddLast(text.Range.Text);
 
-                return linesToSkip;
+                return linesToSkip - 1;
             }
 
             //page title hence just skip this line and continue . . . 
@@ -526,6 +542,7 @@ namespace BibleDataLayer
             string font = "";
             string tmpRef = "";
             string refString = tmpUncommitedRefFontChangeCharacter != "" ? tmpUncommitedRefFontChangeCharacter : tmpUncommitedRef[0].ToString(); ;
+            resultFromPDF = resultFromPDF.Remove(0, 1);
 
             if (isFinal && tmpUncommitedRef != "")
             {

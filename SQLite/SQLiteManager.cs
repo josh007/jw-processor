@@ -57,14 +57,14 @@ namespace SQLite
             Command.ExecuteNonQuery();
 
             sql = "CREATE TABLE 'references'(id INTEGER PRIMARY KEY  AUTOINCREMENT, chapter_id INTEGER, verse_id INTEGER, text VARCHAR(255), " +
-                  "font_id INTEGER, sequence INTEGER, type INTEGER, FOREIGN KEY (chapter_id) REFERENCES chapter(id) ON DELETE CASCADE, " +
+                  "font_id INTEGER, sequence INTEGER, type INTEGER, FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE, " +
                   "FOREIGN KEY (verse_id) REFERENCES verses(id) ON DELETE CASCADE)";
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
 
             sql = "CREATE VIEW vw_book_verse_row AS " +
                     "SELECT books.id AS book_id, books.name AS book_name,chapters.id AS chapter_id,chapters.chapter_no, " +
-                      "verses.id AS verses_id, verses.verse_no, verses.sequence, verses.verse_text, " +
+                      "verses.id AS verse_id, verses.verse_no, verses.sequence, verses.verse_text, " +
                         "fonts.id AS font_id, fonts.font_name, verses.font_size FROM books " +
                             "INNER JOIN chapters ON books.id = chapters.book_id " +
                                 "INNER JOIN verses ON chapters.id = verses.chapter_id " +
@@ -133,7 +133,7 @@ namespace SQLite
             Command.ExecuteNonQuery();
 
             sql = "SELECT books.id AS book_id, books.name AS book_name,chapters.id AS chapter_id,chapters.chapter_no, " +
-                  "verses.id AS verses_id, verses.verse_no, verses.sequence, verses.verse_text, " +
+                  "verses.id AS verse_id, verses.verse_no, verses.sequence, verses.verse_text, " +
                     "fonts.font_name, verses.font_size FROM books " +
                         "INNER JOIN chapters ON books.id = chapters.book_id " +
                             "INNER JOIN verses ON chapters.id = verses.chapter_id " +
@@ -183,7 +183,7 @@ namespace SQLite
             }
 
 
-            sql = "INSERT INTO references(chapter_id, verse_id, sequence, text, font_id, type)VALUES(" +
+            sql = "INSERT INTO 'references'(chapter_id, verse_id, sequence, text, font_id, type)VALUES(" +
                                             chapter_id + "," + verse_id + "," + sequence + ",'" +
                                             ref_text + "', " + font_id + ", " + type + ")";
             Command.CommandText = sql;

@@ -26,10 +26,10 @@ namespace test2
 
         private void btnRead_Click(object sender, EventArgs e)
         {
-            Bible bible = new Bible();
+            Bible bible = new Bible(ConnectionString: "Data Source=joshdb.sqlite;Version=3;foreign keys=true;");
             //bible.PopulateTestData();
             //return;
-            bible.CreateBible();
+            //bible.CreateBible();
             
             bible.BibleParser(fileName: @"E:\share\joshua.docx", bookName: "joshua");
 
