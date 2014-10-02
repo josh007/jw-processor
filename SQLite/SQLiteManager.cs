@@ -62,6 +62,12 @@ namespace SQLite
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
 
+
+            sql = "CREATE TABLE reference_exceptions(id INTEGER PRIMARY KEY  AUTOINCREMENT,book_id INTEGER ,chapter_no INTEGER, " +
+                  "verse_no INTEGER, text VARCHAR(255), FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE)";
+            Command.CommandText = sql;
+            Command.ExecuteNonQuery();
+            
             sql = "CREATE VIEW vw_book_verse_row AS " +
                     "SELECT books.id AS book_id, books.name AS book_name,chapters.id AS chapter_id,chapters.chapter_no, " +
                       "verses.id AS verse_id, verses.verse_no, verses.sequence, verses.verse_text, " +
@@ -157,6 +163,14 @@ namespace SQLite
         //{
         //    SQLiteConnection.CreateFile("joshdb.sqlite");
         //}
+
+        public void InsertReferenceException(int book_id, int chapter_no, int verse_no, string ref_text)
+        {
+            string sql = "INSERT INTO reference_exceptions(book_id, chapter_no, verse_no, text)VALUES(" +
+                                            book_id + ", " + chapter_no + "," + verse_no +  ",'" + ref_text + "')";
+            Command.CommandText = sql;
+            Command.ExecuteNonQuery();
+        }
 
         public void InsertReference(int chapter_id, int verse_id, int sequence, string ref_text, string font_name, int type)
         {

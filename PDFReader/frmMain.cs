@@ -23,7 +23,7 @@ namespace PDFReader
         private void btnRead_Click(object sender, EventArgs e)
         {
             ImportDataToSQLite importer = new ImportDataToSQLite();
-            rtxtMain.Text = importer.Import("joshua", @"e:\share\joshua.pdf");
+            rtxtMain.Text = importer.Import(bookName:"joshua", fileName: @"E:\share\joshua.pdf");
 
         }
     }

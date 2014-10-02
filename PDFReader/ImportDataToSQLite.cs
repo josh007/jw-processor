@@ -109,9 +109,9 @@ namespace PDFReader
                     {
                         tmp = lines[i + 1].Replace("\n", "").Trim();
                         InsertBookDetails(pdf_book_id, tmp, (tmp == "" ? RefType.NONE:RefType.HEADING)); // the line next to the one above
+                        InsertBookDetails(pdf_book_id, "", RefType.NONE); // current line
+                        i += 2; // skip two cause i already processed them . .. 
                     }
-                    InsertBookDetails(pdf_book_id, "", RefType.NONE); // current line
-                    i += 2; // skip two cause i already processed them . .. 
                 }
                 else // means normal text
                 {
