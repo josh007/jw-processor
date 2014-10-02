@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using PDFReader;
 using SQLite;
@@ -258,9 +259,8 @@ namespace BibleDataLayer
                                     chapter = InsertChapter(book, tmpChapterNo);
                                 }
                             }
-                            Console.WriteLine("inserting verse: C{0} |V{1} |SEQ{2} |text-{3} |F{4}({5})",
-                                chapter.ChapterNo, 1, sequence, text, font, size);
-                            Console.ReadLine();
+                            Console.WriteLine("inserting verse: C{0} |V{1} |SEQ{2}", chapter.ChapterNo, 1, sequence);
+                            //Console.ReadLine();
                         }
 
                         // means there is some other characters on top of the chapter
@@ -469,7 +469,7 @@ namespace BibleDataLayer
 
                         #endregion
                     }
-                    else if (size == 3.5 || size == 6 || size == 7 || size == 11 || size == 14) // means it's a reference foot-note or other
+                    else if (size == 3.5 || size == 6 || size == 7 || size == 11 || size == 10 || size == 14) // means it's a reference foot-note or other
                     {
                         #region
 
@@ -487,6 +487,8 @@ namespace BibleDataLayer
                         resultFromPDFPrev = "";
                         text = "";
 
+                        
+                        
                         skipedLines = ProcessReference(oPara, resultFromPDF, chapter, footNotes, size, refDetails);
                         resultFromPDF = "";
                         break;
@@ -561,18 +563,17 @@ namespace BibleDataLayer
                 // this logic is ok dont modify
                 if (tmpUncommitedRef != "" && resultFromPDF.Remove(0, 1) == tmpUncommitedRef.Remove(tmpUncommitedRef.Length - 1, 1))
                     return 0;
-                
+
                 ProcessReferenceText(text, resultFromPDF, footNotes, false);
 
                 return 0;
             }
 
+            var splittedRef = text.Range.Text.Split(new[] { "􀀍" }, StringSplitOptions.None);
+            
+            linesToSkip = (splittedRef.Length > 1 && splittedRef[0].Trim() == "" ? splittedRef.Length - 1 : splittedRef.Length);
             if (size == 6 || size == 7) // no need to further processing as this is just a reference detail
-            {
-                //var splittedRef = text.Range.Text.Split(new[] { "¿" }, StringSplitOptions.None);􀀍 or ,
-                var splittedRef = text.Range.Text.Split(new[] { "􀀍" }, StringSplitOptions.None);
-                linesToSkip = splittedRef.Length;
-
+            {               
                 if (isFootNote)
                 {
                     if (linesToSkip <= 1) // this line is also part of the foot-note
@@ -605,8 +606,6 @@ namespace BibleDataLayer
             //page title hence just skip this line and continue . . . 
             if (size == 10 || size == 11 || size == 14) // pageer/page # hence references start . . . 
             {
-                linesToSkip = text.Range.Text.Split(new[] { "􀀍" }, StringSplitOptions.None).Length;
-
                 if (isFootNote)
                 {
                     ProcessReferenceText(text, resultFromPDF, footNotes, true);
@@ -763,8 +762,7 @@ namespace BibleDataLayer
                     break;
             }
 
-            Console.WriteLine("inserting verse: C{0} |V{1} |SEQ{2} |text-{3} |F{4}({5})",
-                chapter.ChapterNo, verseNo, sequence, verseText, fontName, size);
+            Console.WriteLine("inserting verse: C{0} |V{1} |SEQ{2} ", chapter.ChapterNo, verseNo, sequence);
 
             return SqlMgr.InsertVerse(chapter.Id, verseNo, sequence, verseText, fontName, size);
         }
@@ -840,7 +838,7 @@ namespace BibleDataLayer
                 chapterReferences.Add(new Reference
                 {
                     Chapter = new Chapter { ChapterNo = chapterNo, Book = new Book { Name = bookName } },
-                    Verse = new Verse{No = reference.VerseNo},
+                    Verse = new Verse { No = reference.VerseNo },
                     Sequene = reference.Sequence,
                     Text = reference.Text,
                     Font = new Font { Name = reference.FontName },

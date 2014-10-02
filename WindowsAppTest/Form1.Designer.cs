@@ -34,9 +34,10 @@
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.rtxtMain = new System.Windows.Forms.RichTextBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.rtxtFootNote = new System.Windows.Forms.RichTextBox();
             this.rtxtReference = new System.Windows.Forms.RichTextBox();
             this.btnReadRef = new System.Windows.Forms.Button();
-            this.rtxtFootNote = new System.Windows.Forms.RichTextBox();
+            this.lblInfo = new System.Windows.Forms.Label();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
@@ -103,6 +104,14 @@
             this.tabPage2.Text = "References";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // rtxtFootNote
+            // 
+            this.rtxtFootNote.Location = new System.Drawing.Point(331, 6);
+            this.rtxtFootNote.Name = "rtxtFootNote";
+            this.rtxtFootNote.Size = new System.Drawing.Size(299, 424);
+            this.rtxtFootNote.TabIndex = 3;
+            this.rtxtFootNote.Text = "";
+            // 
             // rtxtReference
             // 
             this.rtxtReference.Location = new System.Drawing.Point(14, 6);
@@ -121,19 +130,23 @@
             this.btnReadRef.UseVisualStyleBackColor = true;
             this.btnReadRef.Click += new System.EventHandler(this.btnReadRef_Click);
             // 
-            // rtxtFootNote
+            // lblInfo
             // 
-            this.rtxtFootNote.Location = new System.Drawing.Point(331, 6);
-            this.rtxtFootNote.Name = "rtxtFootNote";
-            this.rtxtFootNote.Size = new System.Drawing.Size(299, 424);
-            this.rtxtFootNote.TabIndex = 3;
-            this.rtxtFootNote.Text = "";
+            this.lblInfo.AutoSize = true;
+            this.lblInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblInfo.ForeColor = System.Drawing.Color.LimeGreen;
+            this.lblInfo.Location = new System.Drawing.Point(13, 502);
+            this.lblInfo.Name = "lblInfo";
+            this.lblInfo.Size = new System.Drawing.Size(41, 13);
+            this.lblInfo.TabIndex = 3;
+            this.lblInfo.Text = "status";
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(680, 530);
+            this.Controls.Add(this.lblInfo);
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.btnReadRef);
             this.Controls.Add(this.btnReadMain);
@@ -145,6 +158,7 @@
             this.tabPage1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -159,6 +173,7 @@
         private System.Windows.Forms.RichTextBox rtxtReference;
         private System.Windows.Forms.Button btnReadRef;
         private System.Windows.Forms.RichTextBox rtxtFootNote;
+        private System.Windows.Forms.Label lblInfo;
     }
 }
 

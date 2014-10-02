@@ -32,6 +32,8 @@ namespace test2
 
             foreach (var verse in verseDetails)
             {
+                lblInfo.Text = string.Format("reading text for {0} : {1} ",verse.Chapter.ChapterNo, verse.No);
+
                 // Heading writer anywhere
                 if (verse.Sequene == 0)
                 {
@@ -74,6 +76,8 @@ namespace test2
 
             foreach (var reference in references)
             {
+                lblInfo.Text = string.Format("reading ref for {0} : {1} ", reference.Chapter.ChapterNo, reference.Verse.No);
+
                 if (reference.Type == Bible.RefType.FOOTNOTE)
                 {
                     if (currentVerseNo != reference.Verse.No)
@@ -118,6 +122,7 @@ namespace test2
 
         private void btnReadMain_Click(object sender, EventArgs e)
         {
+            rtxtMain.Clear();
             tabControl1.SelectTab(0);
             var fileName = @"C:\Users\Administrator\Documents\Visual Studio 2012\Projects\jw-processor\ConsoleAppTest\bin\Debug\joshdb.sqlite";
             Bible bible = new Bible(ConnectionString: "Data Source=" + fileName + ";Version=3;foreign keys=true;");
@@ -138,6 +143,7 @@ namespace test2
 
             foreach (var chapter in chapters)
             {
+                lblInfo.Text = "Processing CHAPTER " + chapter.ChapterNo;
                 WriteVerse(chapter.Verses);
             }
 
@@ -146,6 +152,8 @@ namespace test2
         private void btnReadRef_Click(object sender, EventArgs e)
         {
             tabControl1.SelectTab(1);
+            rtxtReference.Clear();
+            rtxtFootNote.Clear();
 
             var fileName = @"C:\Users\Administrator\Documents\Visual Studio 2012\Projects\jw-processor\ConsoleAppTest\bin\Debug\joshdb.sqlite";
             Bible bible = new Bible(ConnectionString: "Data Source=" + fileName + ";Version=3;foreign keys=true;");
