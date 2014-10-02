@@ -9,15 +9,6 @@ namespace SQLite
 {
     public class SQLiteManager
     {
-        public struct VerseResult
-        {
-            public int VerseNo { get; set; }
-            public int Sequence { get; set; }
-            public string Text { get; set; }
-            public string FontName { get; set; }
-            public double Size { get; set; }
-        }
-
         public SQLiteConnection Connection;
         public SQLiteCommand Command;
 
@@ -67,7 +58,18 @@ namespace SQLite
                   "verse_no INTEGER, text VARCHAR(255), FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE)";
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
-            
+
+            sql = "CREATE VIEW vw_references AS " +
+                  "SELECT ref.*, chapter_no,verse_no, name FROM 'references' ref " +
+                  "INNER JOIN chapters ON ref.chapter_id = chapters.id " +
+                  "INNER JOIN verses ON ref.verse_id = verses.id " +
+                  "INNER JOIN books ON chapters.book_id = books.id " +
+                  "INNER JOIN fonts ON ref.font_id = fonts.id " +
+                  "ORDER BY name, chapter_no, verse_no, sequence";
+            Command.CommandText = sql;
+            Command.ExecuteNonQuery();
+
+
             sql = "CREATE VIEW vw_book_verse_row AS " +
                     "SELECT books.id AS book_id, books.name AS book_name,chapters.id AS chapter_id,chapters.chapter_no, " +
                       "verses.id AS verse_id, verses.verse_no, verses.sequence, verses.verse_text, " +
@@ -167,7 +169,7 @@ namespace SQLite
         public void InsertReferenceException(int book_id, int chapter_no, int verse_no, string ref_text)
         {
             string sql = "INSERT INTO reference_exceptions(book_id, chapter_no, verse_no, text)VALUES(" +
-                                            book_id + ", " + chapter_no + "," + verse_no +  ",'" + ref_text + "')";
+                                            book_id + ", " + chapter_no + "," + verse_no + ",'" + ref_text + "')";
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
         }
@@ -293,6 +295,8 @@ namespace SQLite
 
             }
 
+            reader.Close();
+
             if (currentChapter.Count > 0)
                 result.Add(chapterNo, currentChapter);
 
@@ -320,6 +324,8 @@ namespace SQLite
                     });
             }
 
+            reader.Close();
+
             return result;
         }
 
@@ -345,6 +351,8 @@ namespace SQLite
                         Size = Convert.ToDouble(reader[4])
                     });
             }
+
+            reader.Close();
 
             return result;
         }
@@ -382,7 +390,7 @@ namespace SQLite
             string result = "";
             next_record = prev_record;
             string sql = "SELECT pdfbooks_detail_id, text, ref_type FROM vw_pdf_book_detail_row " +
-                         "WHERE pdfbooks_detail_id > " + prev_record + " ORDER BY pdfbooks_detail_id ASC";          
+                         "WHERE pdfbooks_detail_id > " + prev_record + " ORDER BY pdfbooks_detail_id ASC";
             Command.CommandText = sql;
 
             SQLiteDataReader reader = Command.ExecuteReader();
@@ -394,14 +402,16 @@ namespace SQLite
                     continue;
                 }
                 result = reader[1].ToString().Trim();// ck 2 c if empty then skip
-                if(result != "") // 
+                if (result != "") // 
                 {
                     next_record = Convert.ToInt32(reader[0]);
                     result = reader[2] + result;
                     break;
                 }
             }
+
             reader.Close();
+            
             return result;
         }
 
@@ -414,10 +424,76 @@ namespace SQLite
 
         public int GetVerseId(int book_id, int chapter_no, int verse_no)
         {
-            string sql = "SELECT verse_id FROM vw_book_verse_row WHERE book_id = " + book_id + 
+            string sql = "SELECT verse_id FROM vw_book_verse_row WHERE book_id = " + book_id +
                             " AND chapter_no = " + chapter_no + " AND verse_no = " + verse_no;
             Command.CommandText = sql;
             return Convert.ToInt32(Command.ExecuteScalar());
+        }
+
+        public List<ReferenceResult> GetChapterReferences(string book_name, int chapter_no)
+        {
+            var result = new List<ReferenceResult>();
+
+            string sql = "SELECT chapter_no,verse_no, font_name, text, sequence, type " +
+                            "FROM vw_references WHERE book_name = '" + book_name + "' AND chapter_no = " + chapter_no;
+            Command.CommandText = sql;
+            SQLiteDataReader reader = Command.ExecuteReader();
+
+            while (reader.Read())
+            {
+                result.Add(
+                    new ReferenceResult
+                    {
+                        ChapterNo = Convert.ToInt32(reader[0]),
+                        VerseNo = Convert.ToInt32(reader[1]),
+                        FontName = reader[2].ToString(),
+                        Text = reader[3].ToString(),
+                        Sequence = Convert.ToInt32(reader[4]),
+                        Type = Convert.ToInt32(reader[5])
+                    });
+            }
+
+            reader.Close();
+
+            return result;
+        }
+
+        public Dictionary<int, List<ReferenceResult>> GetReferences(string book_name)
+        {
+            var result = new Dictionary<int, List<ReferenceResult>>();
+
+            string sql = "SELECT chapter_no, verse_no, font_name, text, sequence, type " +
+                            "FROM vw_references WHERE name = '" + book_name + "'";
+            Command.CommandText = sql;
+            SQLiteDataReader reader = Command.ExecuteReader();
+
+            int chapterNo = 0;
+            var currentChapter = new List<ReferenceResult>();
+
+            while (reader.Read())
+            {
+                if (chapterNo != Convert.ToInt32(reader[0]))
+                {
+                    chapterNo = Convert.ToInt32(reader[0]);
+                    currentChapter = new List<ReferenceResult>();
+                    result.Add(chapterNo, currentChapter);
+                }
+
+                currentChapter.Add(new ReferenceResult
+                {
+                    ChapterNo = Convert.ToInt32(reader[0]),
+                    VerseNo = Convert.ToInt32(reader[1]),
+                    FontName = reader[2].ToString(),
+                    Text = reader[3].ToString(),
+                    Sequence = Convert.ToInt32(reader[4]),
+                    Type = Convert.ToInt32(reader[5])
+                });
+
+            }
+
+            reader.Close();
+
+            return result;
         }
     }
 }

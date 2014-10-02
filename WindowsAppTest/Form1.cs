@@ -19,19 +19,113 @@ namespace test2
             InitializeComponent();
         }
 
-        private void btnExit_Click(object sender, EventArgs e)
+        private void Form1_Load(object sender, EventArgs e)
         {
-            Application.Exit();
+            //btnReadMain_Click(this, new EventArgs());
+            tabControl1.SelectTab(1);
+        }
+        
+        private void WriteVerse(List<Verse> verseDetails)
+        {
+            int currentVerseNo = 1;
+            bool isChapter = true;
+
+            foreach (var verse in verseDetails)
+            {
+                // Heading writer anywhere
+                if (verse.Sequene == 0)
+                {
+                    rtxtMain.SelectionColor = Color.Orange;
+                    rtxtMain.SelectionFont = new System.Drawing.Font("VG2 Main", (float)11, FontStyle.Bold);
+                    rtxtMain.AppendText(Environment.NewLine + verse.Text + Environment.NewLine);
+                    continue;
+                }
+
+                // Chapter # writer
+                if (currentVerseNo == 1 && verse.No == 1 && isChapter)
+                {
+                    rtxtMain.SelectionColor = Color.DeepSkyBlue;
+                    rtxtMain.SelectionFont = new System.Drawing.Font("VG2 Main", (float)22, FontStyle.Bold);
+                    rtxtMain.AppendText(verse.Chapter.ChapterNo.ToString());
+                    isChapter = false;
+                }
+
+                // Verse # writer
+                if (currentVerseNo != verse.No && verse.Sequene != 0)
+                {
+                    currentVerseNo = verse.No;
+                    rtxtMain.SelectionColor = Color.Green;
+                    rtxtMain.SelectionFont = new System.Drawing.Font("VG2 Main", (float)8, FontStyle.Bold);
+                    rtxtMain.AppendText(currentVerseNo.ToString());
+                }
+
+                rtxtMain.SelectionColor = Color.Black;
+                rtxtMain.SelectionFont = new System.Drawing.Font(verse.Font.Name, (float)verse.Size, FontStyle.Regular);
+                rtxtMain.AppendText(verse.Text);
+                rtxtMain.ScrollToCaret();
+                //Thread.Sleep(1000);
+                Application.DoEvents();
+            }
         }
 
-        private void btnRead_Click(object sender, EventArgs e)
+        private void WriteReference(IEnumerable<Reference> references)
         {
-            Bible bible = new Bible(ConnectionString: "Data Source=joshdb.sqlite;Version=3;foreign keys=true;");
+            int currentVerseNo = 0;
+
+            foreach (var reference in references)
+            {
+                if (reference.Type == Bible.RefType.FOOTNOTE)
+                {
+                    if (currentVerseNo != reference.Verse.No)
+                    {
+                        rtxtFootNote.SelectionColor = Color.Orange;
+                        rtxtFootNote.SelectionFont = new System.Drawing.Font("Times New Roman", (float)10, FontStyle.Bold);
+                        rtxtFootNote.AppendText(Environment.NewLine + reference.Chapter.ChapterNo + ":" + reference.Verse.No + Environment.NewLine);
+                        currentVerseNo = reference.Verse.No;
+
+//                        reference.Text = reference.Text.Remove(0, 1);
+                        for (int i = 1; i < reference.Text.Length; i++)
+                        {
+                              if(char.IsDigit(reference.Text[i]))
+                                  continue;
+                            reference.Text = reference.Text.Remove(1, i - 1);
+                            break;
+                        }
+                    }
+
+                    rtxtFootNote.SelectionColor = Color.DodgerBlue;
+                    rtxtFootNote.SelectionFont = new System.Drawing.Font(reference.Font.Name, (float)9, FontStyle.Regular);
+                    rtxtFootNote.AppendText(reference.Text);
+
+                    continue;
+                }
+
+                rtxtReference.SelectionColor = Color.Green;
+                rtxtReference.SelectionFont = new System.Drawing.Font("Times New Roman", (float)10, FontStyle.Bold);
+                rtxtReference.AppendText(reference.Chapter.ChapterNo + ":" + reference.Verse.No + " ");
+
+                rtxtReference.SelectionColor = Color.Black;
+                rtxtReference.SelectionFont = new System.Drawing.Font("VG2 Main", (float)9, FontStyle.Regular);
+                reference.Text = reference.Text.Replace((char) 56256, ' ');
+                reference.Text = reference.Text.Replace((char) 56333, 'Ý');
+                rtxtReference.AppendText(reference.Text.Replace(" ", "") + Environment.NewLine + Environment.NewLine);
+                
+                rtxtReference.ScrollToCaret();
+
+                Application.DoEvents();
+            }
+        }
+
+        private void btnReadMain_Click(object sender, EventArgs e)
+        {
+            tabControl1.SelectTab(0);
+            var fileName = @"C:\Users\Administrator\Documents\Visual Studio 2012\Projects\jw-processor\ConsoleAppTest\bin\Debug\joshdb.sqlite";
+            Bible bible = new Bible(ConnectionString: "Data Source=" + fileName + ";Version=3;foreign keys=true;");
             //bible.PopulateTestData();
             //return;
             //bible.CreateBible();
-            
-            bible.BibleParser(fileName: @"E:\share\joshua.docx", bookName: "joshua");
+
+            //bible.BibleParser(fileName: @"E:\share\joshua.docx", bookName: "joshua");
 
 
             //List<Verse> verseDetails = bible.GetVerse("joshua", 1, 1);
@@ -49,52 +143,32 @@ namespace test2
 
         }
 
-        private void WriteVerse(List<Verse> verseDetails)
+        private void btnReadRef_Click(object sender, EventArgs e)
         {
-            int currentVerseNo = 1;
-            bool isChapter = true;
+            tabControl1.SelectTab(1);
 
-            foreach (var verse in verseDetails)
-            {
-                // Heading writer anywhere
-                if (verse.Sequene == 0)
-                {
-                    richTextBox1.SelectionColor = Color.Orange;
-                    richTextBox1.SelectionFont = new System.Drawing.Font("VG2 Main", (float)11, FontStyle.Bold);
-                    richTextBox1.AppendText(Environment.NewLine + verse.Text + Environment.NewLine);
-                    continue;
-                }
-                
-                // Chapter # writer
-                if (currentVerseNo == 1 && verse.No == 1 && isChapter)
-                {
-                    richTextBox1.SelectionColor = Color.DeepSkyBlue;
-                    richTextBox1.SelectionFont = new System.Drawing.Font("VG2 Main", (float)22, FontStyle.Bold);
-                    richTextBox1.AppendText(verse.Chapter.ChapterNo.ToString());
-                    isChapter = false;
-                }
+            var fileName = @"C:\Users\Administrator\Documents\Visual Studio 2012\Projects\jw-processor\ConsoleAppTest\bin\Debug\joshdb.sqlite";
+            Bible bible = new Bible(ConnectionString: "Data Source=" + fileName + ";Version=3;foreign keys=true;");
+            //bible.PopulateTestData();
+            //return;
+            //bible.CreateBible();
 
-                // Verse # writer
-                if (currentVerseNo != verse.No  && verse.Sequene != 0)
-                {
-                    currentVerseNo = verse.No;
-                    richTextBox1.SelectionColor = Color.Green;
-                    richTextBox1.SelectionFont = new System.Drawing.Font("VG2 Main", (float)8, FontStyle.Bold);
-                    richTextBox1.AppendText(currentVerseNo.ToString());
-                }
+            //bible.BibleParser(fileName: @"E:\share\joshua.docx", bookName: "joshua");
 
-                richTextBox1.SelectionColor = Color.Black;
-                richTextBox1.SelectionFont = new System.Drawing.Font(verse.Font.Name, (float)verse.Size, FontStyle.Regular);
-                richTextBox1.AppendText(verse.Text);
-                richTextBox1.ScrollToCaret();
-                //Thread.Sleep(1000);
-                Application.DoEvents();
-            }
+
+            //List<Verse> verseDetails = bible.GetVerse("joshua", 1, 1);
+            //WriteVerse(verseDetails);
+
+            //List<Verse> verseDetails = bible.GetChapter("joshua", 1);
+            //WriteVerse(verseDetails);
+            var references = bible.GetReferences("joshua");
+            WriteReference(references);
+
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void btnExit_Click(object sender, EventArgs e)
         {
-            btnRead_Click(this, new EventArgs());
+            Application.Exit();
         }
     }
 }

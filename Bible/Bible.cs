@@ -258,6 +258,9 @@ namespace BibleDataLayer
                                     chapter = InsertChapter(book, tmpChapterNo);
                                 }
                             }
+                            Console.WriteLine("inserting verse: C{0} |V{1} |SEQ{2} |text-{3} |F{4}({5})",
+                                chapter.ChapterNo, 1, sequence, text, font, size);
+                            Console.ReadLine();
                         }
 
                         // means there is some other characters on top of the chapter
@@ -528,7 +531,7 @@ namespace BibleDataLayer
                         }
                         continue;
                     }
-                    else if (!char.IsDigit(text.Range.Text[i]))
+                    if (!char.IsDigit(text.Range.Text[i]))
                     {
                         if (text.Range.Text[i] == 56256)//'�')
                         {
@@ -554,6 +557,11 @@ namespace BibleDataLayer
                     throw new Exception(); // illegal shouldn't happen
 
                 isFootNote = true;
+
+                // this logic is ok dont modify
+                if (tmpUncommitedRef != "" && resultFromPDF.Remove(0, 1) == tmpUncommitedRef.Remove(tmpUncommitedRef.Length - 1, 1))
+                    return 0;
+                
                 ProcessReferenceText(text, resultFromPDF, footNotes, false);
 
                 return 0;
@@ -597,6 +605,8 @@ namespace BibleDataLayer
             //page title hence just skip this line and continue . . . 
             if (size == 10 || size == 11 || size == 14) // pageer/page # hence references start . . . 
             {
+                linesToSkip = text.Range.Text.Split(new[] { "􀀍" }, StringSplitOptions.None).Length;
+
                 if (isFootNote)
                 {
                     ProcessReferenceText(text, resultFromPDF, footNotes, true);
@@ -615,7 +625,7 @@ namespace BibleDataLayer
                     InsertRefDetails(refDetails, chapter);
                 }
 
-                return 0;
+                return linesToSkip - 1;
             }
 
             throw new Exception();//illegal shouldn't happen
@@ -695,10 +705,17 @@ namespace BibleDataLayer
                 font = character.Font.Name;
             }
 
-            if (resultFromPDF.Remove(tmpUncommitedRef.Length, resultFromPDF.Length - tmpUncommitedRef.Length).Length == tmpUncommitedRef.Length)
+            if (isFootNote)
+            {
                 tmpRef = resultFromPDF + "\r";
-            else // means there is a problem??????? TODO: what will happen . . . .
-                throw new Exception();
+            }
+            else
+            {
+                if (resultFromPDF.Remove(tmpUncommitedRef.Length, resultFromPDF.Length - tmpUncommitedRef.Length).Length == tmpUncommitedRef.Length)
+                    tmpRef = resultFromPDF + "\r";
+                else // means there is a problem??????? TODO: what will happen . . . .
+                    throw new Exception();
+            }
 
             tmpUncommitedRef += tmpRef;
         }
@@ -786,12 +803,61 @@ namespace BibleDataLayer
             return SqlMgr.GetVerseId(bookId, chapterNo, verseNo);
         }
 
+        public List<Reference> GetReferences(string bookName)
+        {
+            var bookReferences = new List<Reference>();
+
+            Dictionary<int, List<ReferenceResult>> references = SqlMgr.GetReferences(bookName);
+
+            foreach (var reference in references)
+            {
+                foreach (var refer in reference.Value)
+                {
+                    bookReferences.Add(new Reference
+                    {
+                        Chapter = new Chapter { ChapterNo = reference.Key, Book = new Book { Name = bookName } },
+                        Verse = new Verse { No = refer.VerseNo },
+                        Sequene = refer.Sequence,
+                        Text = refer.Text,
+                        Font = new Font { Name = refer.FontName },
+                        RefText = refer.Text[0].ToString(),
+                        Type = (RefType)refer.Type
+                    });
+                }
+            }
+
+            return bookReferences;
+        }
+
+        public List<Reference> GetReferencesForChapter(string bookName, int chapterNo)
+        {
+            var chapterReferences = new List<Reference>();
+
+            List<ReferenceResult> references = SqlMgr.GetChapterReferences(bookName, chapterNo);
+
+            foreach (var reference in references)
+            {
+                chapterReferences.Add(new Reference
+                {
+                    Chapter = new Chapter { ChapterNo = chapterNo, Book = new Book { Name = bookName } },
+                    Verse = new Verse{No = reference.VerseNo},
+                    Sequene = reference.Sequence,
+                    Text = reference.Text,
+                    Font = new Font { Name = reference.FontName },
+                    RefText = reference.Text[0].ToString(),
+                    Type = (RefType)reference.Type
+                });
+            }
+
+            return chapterReferences;
+        }
+
         public List<Chapter> GetChapters(string bookName)
         {
-            List<Chapter> bookChapters = new List<Chapter>();
+            var bookChapters = new List<Chapter>();
 
             //int NoOfChapters = SqlMgr.GetNoOfChapters(bookName);
-            Dictionary<int, List<SQLiteManager.VerseResult>> chapters = SqlMgr.GetChapters(bookName);
+            Dictionary<int, List<VerseResult>> chapters = SqlMgr.GetChapters(bookName);
 
             foreach (var chapter in chapters)
             {
@@ -818,10 +884,9 @@ namespace BibleDataLayer
 
         public List<Verse> GetChapter(string bookName, int chapterNo)
         {
-            List<Verse> chapterVerses = new List<Verse>();
+            var chapterVerses = new List<Verse>();
 
-            int NoOfVerses = SqlMgr.GetNoOfVerses(bookName, chapterNo);
-            List<SQLiteManager.VerseResult> verses = SqlMgr.GetChapter(bookName, chapterNo);
+            List<VerseResult> verses = SqlMgr.GetChapter(bookName, chapterNo);
 
             foreach (var verse in verses)
             {
@@ -848,7 +913,7 @@ namespace BibleDataLayer
         {
             List<Verse> result = new List<Verse>();
 
-            List<SQLiteManager.VerseResult> verseDetails = SqlMgr.GetVerse(bookName, chapterNo, verseNoStart, verseNoEnd);
+            List<VerseResult> verseDetails = SqlMgr.GetVerse(bookName, chapterNo, verseNoStart, verseNoEnd);
 
             foreach (var verse in verseDetails)
             {
@@ -916,9 +981,9 @@ namespace BibleDataLayer
 
             if (tmpVerseId == 0 || tmpChapterId == 0) // illegal
                 InsertReferenceException(chapter.Book.Id, Convert.ToInt32(split[0]), Convert.ToInt32(split[1]), tmpVerseDetail);
-            else        
+            else
                 InsertReference(tmpChapterId, tmpVerseId, 0, tmpVerseDetail, null, (int)RefType.REF);
-            
+
             refDetails.Clear();
 
             isRefUncomitted = false;
