@@ -171,7 +171,8 @@ namespace test2
             //WriteVerse(verseDetails);
             var references = bible.GetReferences("joshua");
             WriteReference(references);
-
+            //rtxtReference.ScrollToCaret();
+            rtxtFootNote.ScrollToCaret();
         }
 
         private void btnExit_Click(object sender, EventArgs e)

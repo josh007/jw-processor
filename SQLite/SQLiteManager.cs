@@ -65,7 +65,7 @@ namespace SQLite
                   "INNER JOIN verses ON ref.verse_id = verses.id " +
                   "INNER JOIN books ON chapters.book_id = books.id " +
                   "INNER JOIN fonts ON ref.font_id = fonts.id " +
-                  "ORDER BY name, chapter_no, verse_no, sequence";
+                  "ORDER BY name, chapter_no, chapter_id, verse_no, verse_id, sequence";
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
 
