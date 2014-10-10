@@ -36,11 +36,12 @@
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.rtxtFootNote = new System.Windows.Forms.RichTextBox();
             this.rtxtReference = new System.Windows.Forms.RichTextBox();
+            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.rtxtPDF = new System.Windows.Forms.RichTextBox();
             this.btnReadRef = new System.Windows.Forms.Button();
             this.lblInfo = new System.Windows.Forms.Label();
-            this.tabPage3 = new System.Windows.Forms.TabPage();
             this.btnPDF = new System.Windows.Forms.Button();
-            this.rtxtPDF = new System.Windows.Forms.RichTextBox();
+            this.btnValidate = new System.Windows.Forms.Button();
             this.tab.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
@@ -125,6 +126,24 @@
             this.rtxtReference.TabIndex = 3;
             this.rtxtReference.Text = "";
             // 
+            // tabPage3
+            // 
+            this.tabPage3.Controls.Add(this.rtxtPDF);
+            this.tabPage3.Location = new System.Drawing.Point(4, 22);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Size = new System.Drawing.Size(648, 453);
+            this.tabPage3.TabIndex = 2;
+            this.tabPage3.Text = "PDF Fixed";
+            this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // rtxtPDF
+            // 
+            this.rtxtPDF.Location = new System.Drawing.Point(12, 14);
+            this.rtxtPDF.Name = "rtxtPDF";
+            this.rtxtPDF.Size = new System.Drawing.Size(625, 424);
+            this.rtxtPDF.TabIndex = 3;
+            this.rtxtPDF.Text = "";
+            // 
             // btnReadRef
             // 
             this.btnReadRef.Location = new System.Drawing.Point(359, 497);
@@ -146,16 +165,6 @@
             this.lblInfo.TabIndex = 3;
             this.lblInfo.Text = "status";
             // 
-            // tabPage3
-            // 
-            this.tabPage3.Controls.Add(this.rtxtPDF);
-            this.tabPage3.Location = new System.Drawing.Point(4, 22);
-            this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(648, 453);
-            this.tabPage3.TabIndex = 2;
-            this.tabPage3.Text = "PDF Fixed";
-            this.tabPage3.UseVisualStyleBackColor = true;
-            // 
             // btnPDF
             // 
             this.btnPDF.Location = new System.Drawing.Point(246, 497);
@@ -166,13 +175,15 @@
             this.btnPDF.UseVisualStyleBackColor = true;
             this.btnPDF.Click += new System.EventHandler(this.btnPDF_Click);
             // 
-            // rtxtPDF
+            // btnValidate
             // 
-            this.rtxtPDF.Location = new System.Drawing.Point(12, 14);
-            this.rtxtPDF.Name = "rtxtPDF";
-            this.rtxtPDF.Size = new System.Drawing.Size(625, 424);
-            this.rtxtPDF.TabIndex = 3;
-            this.rtxtPDF.Text = "";
+            this.btnValidate.Location = new System.Drawing.Point(133, 497);
+            this.btnValidate.Name = "btnValidate";
+            this.btnValidate.Size = new System.Drawing.Size(107, 23);
+            this.btnValidate.TabIndex = 0;
+            this.btnValidate.Text = "&Validate";
+            this.btnValidate.UseVisualStyleBackColor = true;
+            this.btnValidate.Click += new System.EventHandler(this.btnValidate_Click);
             // 
             // frmMain
             // 
@@ -181,6 +192,7 @@
             this.ClientSize = new System.Drawing.Size(680, 530);
             this.Controls.Add(this.lblInfo);
             this.Controls.Add(this.tab);
+            this.Controls.Add(this.btnValidate);
             this.Controls.Add(this.btnPDF);
             this.Controls.Add(this.btnReadRef);
             this.Controls.Add(this.btnReadMain);
@@ -212,6 +224,7 @@
         private System.Windows.Forms.TabPage tabPage3;
         private System.Windows.Forms.Button btnPDF;
         private System.Windows.Forms.RichTextBox rtxtPDF;
+        private System.Windows.Forms.Button btnValidate;
     }
 }
 

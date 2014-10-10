@@ -301,8 +301,8 @@ namespace BibleDataLayer
             // Quit Word
             wordApp.Quit(ref oNull, ref oNull, ref oNull);
 
+            ValidateChaptersAndVersesOfBook(bookName);
             ProccessAndFixBibleText(fileName, bookName);
-
         }
 
         private void ProccessAndFixBibleText(string fileName, string bookName)

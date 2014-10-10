@@ -241,5 +241,10 @@ namespace test2
             }
 
         }
+
+        private void btnValidate_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Validated!!");
+        }
     }
 }

@@ -286,6 +286,7 @@ namespace PDFReader
                 if (currentChapter == 1 && result[0] == '1' && currentVerse == 2) // first chapter heading
                 {
                     InsertVerse(bookId, 1, 1, result.Remove(0, 1), RefType.HEADING); // first chp 1st vrs 1st heading
+                    currentChapter++;
                     continue;
                 }
 
@@ -351,24 +352,25 @@ namespace PDFReader
                         }
                         text += result;
                     }
-                    else
+                    else // found the actual chapter
                     {
-                        if (text.Trim() != "")
-                            InsertVerse(bookId, currentChapter, currentVerse, text, RefType.NONE); // prev verse
+                        if (text.Trim() != "") // insert the previous chapters last verse
+                            InsertVerse(bookId, currentChapter - 1, currentVerse, text, RefType.NONE); // prev verse
 
-                        currentChapter++;
                         currentVerse = 2;
                         isChapter = false;
                         shouldChapterNumberRemoved = true;
                         text = "";
-
                         result = result.Remove(0, currentChapter.ToString().Length);
+                        currentChapter++;
+
                         if (!result.Contains(currentVerse.ToString()))
                         {
                             text += result;
                             continue;
                         }
-
+                        
+                        // means chapter # and verse # on the same line
                         int found = result.IndexOf(currentVerse.ToString());
                         text += result.Substring(0, found);
                         InsertVerse(bookId, currentChapter, currentVerse - 1, text, RefType.NONE);
