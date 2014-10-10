@@ -91,6 +91,13 @@ namespace SQLite
             Command.CommandText = sql;
             Command.ExecuteNonQuery();
 
+            sql = "CREATE TABLE pdfbooks_fixed(id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                  "pdf_book_id INTEGER, chapter_no INTEGER, verse_no INTEGER, " +
+                  "text VARCHAR(255), type INTEGER, FOREIGN KEY (pdf_book_id) REFERENCES pdfbooks(id) ON DELETE CASCADE)";
+            Command.CommandText = sql;
+            Command.ExecuteNonQuery();
+
+            //type is 0: Normal text 1: HEADING 2:FOOTNOTE 3:REF
             sql = "CREATE VIEW vw_pdf_book_detail_row AS " +
                     "SELECT pdfbooks.id AS book_id, pdfbooks.name AS pdf_book_name, " +
                         "pdfbookdetails.id AS pdfbooks_detail_id, text, ref_type " +
@@ -263,6 +270,45 @@ namespace SQLite
             return Convert.ToInt32(Command.ExecuteScalar());
         }
 
+        public Dictionary<int, List<VerseResult>> GetPDFChapters(string book_name)
+        {
+            var result = new Dictionary<int, List<VerseResult>>();
+
+            string sql = "SELECT chapter_no, verse_no, text, type " +
+                          "FROM pdfbooks_fixed pf INNER JOIN pdfbooks p ON pf.pdf_book_id = p.id  " +
+                         "WHERE name = '" + book_name + "' ORDER BY chapter_no, verse_no, type DESC";
+            Command.CommandText = sql;
+            SQLiteDataReader reader = Command.ExecuteReader();
+
+            int chapterNo = 1;
+            var currentChapter = new List<VerseResult>();
+
+            while (reader.Read())
+            {
+                if (chapterNo != Convert.ToInt32(reader[0]))
+                {
+                    result.Add(chapterNo, currentChapter);
+                    currentChapter = new List<VerseResult>();
+                    chapterNo = Convert.ToInt32(reader[0]);
+                }
+
+                currentChapter.Add(new VerseResult
+                {
+                    VerseNo = Convert.ToInt32(reader[1]),
+                    Text = reader[2].ToString(),
+                    Type = Convert.ToInt32(reader[3])
+                });
+
+            }
+
+            reader.Close();
+
+            if (currentChapter.Count > 0)
+                result.Add(chapterNo, currentChapter);
+
+            return result;
+        }
+
         public Dictionary<int, List<VerseResult>> GetChapters(string book_name)
         {
             var result = new Dictionary<int, List<VerseResult>>();
@@ -385,9 +431,39 @@ namespace SQLite
             return Convert.ToInt32(Command.ExecuteScalar());
         }
 
-        public string ReadPDFRecord(int prev_record, out int next_record, int skiped_records)
+        //public string ReadPDFRecord(int prev_record, out int next_record, int skiped_records)
+        //{
+        //    string result = "";
+        //    next_record = prev_record;
+        //    string sql = "SELECT pdfbooks_detail_id, text, ref_type FROM vw_pdf_book_detail_row " +
+        //                 "WHERE pdfbooks_detail_id > " + prev_record + " ORDER BY pdfbooks_detail_id ASC";
+        //    Command.CommandText = sql;
+
+        //    SQLiteDataReader reader = Command.ExecuteReader();
+        //    while (reader.Read())
+        //    {
+        //        if (skiped_records != 0)
+        //        {
+        //            skiped_records--;
+        //            continue;
+        //        }
+        //        result = reader[1].ToString().Trim();// ck 2 c if empty then skip
+        //        if (result != "") // 
+        //        {
+        //            next_record = Convert.ToInt32(reader[0]);
+        //            result = reader[2] + result;
+        //            break;
+        //        }
+        //    }
+
+        //    reader.Close();
+
+        //    return result;
+        //}
+
+        public string ReadPDFRecord(int prev_record, out int next_record)
         {
-            string result = "";
+            string result = null;
             next_record = prev_record;
             string sql = "SELECT pdfbooks_detail_id, text, ref_type FROM vw_pdf_book_detail_row " +
                          "WHERE pdfbooks_detail_id > " + prev_record + " ORDER BY pdfbooks_detail_id ASC";
@@ -396,22 +472,14 @@ namespace SQLite
             SQLiteDataReader reader = Command.ExecuteReader();
             while (reader.Read())
             {
-                if (skiped_records != 0)
-                {
-                    skiped_records--;
-                    continue;
-                }
-                result = reader[1].ToString().Trim();// ck 2 c if empty then skip
-                if (result != "") // 
-                {
-                    next_record = Convert.ToInt32(reader[0]);
-                    result = reader[2] + result;
-                    break;
-                }
+                next_record = Convert.ToInt32(reader[0]);
+                result = reader[2] + reader[1].ToString().Trim();
+
+                break;
             }
 
             reader.Close();
-            
+
             return result;
         }
 

@@ -12,9 +12,9 @@ using BibleDataLayer;
 
 namespace test2
 {
-    public partial class Form1 : Form
+    public partial class frmMain : Form
     {
-        public Form1()
+        public frmMain()
         {
             InitializeComponent();
         }
@@ -22,9 +22,54 @@ namespace test2
         private void Form1_Load(object sender, EventArgs e)
         {
             //btnReadMain_Click(this, new EventArgs());
-            tabControl1.SelectTab(1);
+            tab.SelectTab(1);
         }
-        
+
+        private void WritePDFVerse(List<Verse> verseDetails)
+        {
+            int currentVerseNo = 1;
+            bool isChapter = true;
+
+            foreach (var verse in verseDetails)
+            {
+                lblInfo.Text = string.Format("reading text for {0} : {1} ", verse.Chapter.ChapterNo, verse.No);
+
+                // Heading writer anywhere
+                if (verse.Type == Bible.RefType.HEADING)
+                {
+                    rtxtPDF.SelectionColor = Color.Orange;
+                    rtxtPDF.SelectionFont = new System.Drawing.Font("VG2 Main", (float)11, FontStyle.Bold);
+                    rtxtPDF.AppendText(Environment.NewLine + verse.Text + Environment.NewLine);
+                    continue;
+                }
+
+                // Chapter # writer
+                if (currentVerseNo == 1 && verse.No == 1 && isChapter)
+                {
+                    rtxtPDF.SelectionColor = Color.DeepSkyBlue;
+                    rtxtPDF.SelectionFont = new System.Drawing.Font("VG2 Main", (float)22, FontStyle.Bold);
+                    rtxtPDF.AppendText(verse.Chapter.ChapterNo.ToString());
+                    isChapter = false;
+                }
+
+                // Verse # writer
+                if (currentVerseNo != verse.No)
+                {
+                    currentVerseNo = verse.No;
+                    rtxtPDF.SelectionColor = Color.Green;
+                    rtxtPDF.SelectionFont = new System.Drawing.Font("VG2 Main", (float)8, FontStyle.Bold);
+                    rtxtPDF.AppendText(currentVerseNo.ToString());
+                }
+
+                rtxtPDF.SelectionColor = Color.Black;
+                rtxtPDF.SelectionFont = new System.Drawing.Font("VG2 Main", (float)9, FontStyle.Regular);
+                rtxtPDF.AppendText(verse.Text);
+                rtxtPDF.ScrollToCaret();
+                //Thread.Sleep(1000);
+                Application.DoEvents();
+            }
+        }
+
         private void WriteVerse(List<Verse> verseDetails)
         {
             int currentVerseNo = 1;
@@ -32,7 +77,7 @@ namespace test2
 
             foreach (var verse in verseDetails)
             {
-                lblInfo.Text = string.Format("reading text for {0} : {1} ",verse.Chapter.ChapterNo, verse.No);
+                lblInfo.Text = string.Format("reading text for {0} : {1} ", verse.Chapter.ChapterNo, verse.No);
 
                 // Heading writer anywhere
                 if (verse.Sequene == 0)
@@ -80,22 +125,22 @@ namespace test2
 
                 if (reference.Type == Bible.RefType.FOOTNOTE)
                 {
-                    if (currentVerseNo != reference.Verse.No)
-                    {
-                        rtxtFootNote.SelectionColor = Color.Orange;
-                        rtxtFootNote.SelectionFont = new System.Drawing.Font("Times New Roman", (float)10, FontStyle.Bold);
-                        rtxtFootNote.AppendText(Environment.NewLine + reference.Chapter.ChapterNo + ":" + reference.Verse.No + Environment.NewLine);
-                        currentVerseNo = reference.Verse.No;
+                    //if (currentVerseNo != reference.Verse.No)
+                    //{
+                    rtxtFootNote.SelectionColor = Color.Orange;
+                    rtxtFootNote.SelectionFont = new System.Drawing.Font("Times New Roman", (float)10, FontStyle.Bold);
+                    rtxtFootNote.AppendText(Environment.NewLine + reference.Chapter.ChapterNo + ":" + reference.Verse.No + Environment.NewLine);
+                    currentVerseNo = reference.Verse.No;
 
-//                        reference.Text = reference.Text.Remove(0, 1);
-                        for (int i = 1; i < reference.Text.Length; i++)
-                        {
-                              if(char.IsDigit(reference.Text[i]))
-                                  continue;
-                            reference.Text = reference.Text.Remove(1, i - 1);
-                            break;
-                        }
-                    }
+                    //reference.Text = reference.Text.Remove(0, 1);
+                    //for (int i = 1; i < reference.Text.Length; i++)
+                    //{
+                    //    if (char.IsDigit(reference.Text[i]))
+                    //        continue;
+                    //    reference.Text = reference.Text.Remove(1, i - 1);
+                    //    break;
+                    //}
+                    //}
 
                     rtxtFootNote.SelectionColor = Color.DodgerBlue;
                     rtxtFootNote.SelectionFont = new System.Drawing.Font(reference.Font.Name, (float)9, FontStyle.Regular);
@@ -110,10 +155,10 @@ namespace test2
 
                 rtxtReference.SelectionColor = Color.Black;
                 rtxtReference.SelectionFont = new System.Drawing.Font("VG2 Main", (float)9, FontStyle.Regular);
-                reference.Text = reference.Text.Replace((char) 56256, ' ');
-                reference.Text = reference.Text.Replace((char) 56333, 'Ý');
+                reference.Text = reference.Text.Replace((char)56256, ' ');
+                reference.Text = reference.Text.Replace((char)56333, 'Ý');
                 rtxtReference.AppendText(reference.Text.Replace(" ", "") + Environment.NewLine + Environment.NewLine);
-                
+
                 rtxtReference.ScrollToCaret();
 
                 Application.DoEvents();
@@ -123,7 +168,7 @@ namespace test2
         private void btnReadMain_Click(object sender, EventArgs e)
         {
             rtxtMain.Clear();
-            tabControl1.SelectTab(0);
+            tab.SelectTab(0);
             var fileName = @"C:\Users\Administrator\Documents\Visual Studio 2012\Projects\jw-processor\ConsoleAppTest\bin\Debug\joshdb.sqlite";
             Bible bible = new Bible(ConnectionString: "Data Source=" + fileName + ";Version=3;foreign keys=true;");
             //bible.PopulateTestData();
@@ -151,7 +196,7 @@ namespace test2
 
         private void btnReadRef_Click(object sender, EventArgs e)
         {
-            tabControl1.SelectTab(1);
+            tab.SelectTab(1);
             rtxtReference.Clear();
             rtxtFootNote.Clear();
 
@@ -178,6 +223,23 @@ namespace test2
         private void btnExit_Click(object sender, EventArgs e)
         {
             Application.Exit();
+        }
+
+        private void btnPDF_Click(object sender, EventArgs e)
+        {
+            tab.SelectTab(2);
+            rtxtPDF.Clear();
+
+            var fileName = @"C:\Users\Administrator\Documents\Visual Studio 2012\Projects\jw-processor\PDFReader\bin\Debug\joshdb.sqlite";
+            Bible bible = new Bible(ConnectionString: "Data Source=" + fileName + ";Version=3;foreign keys=true;");
+            List<Chapter> chapters = bible.GetPDFChapters("joshua");
+
+            foreach (var chapter in chapters)
+            {
+                lblInfo.Text = "Processing CHAPTER " + chapter.ChapterNo;
+                WritePDFVerse(chapter.Verses);
+            }
+
         }
     }
 }

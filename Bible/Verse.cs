@@ -10,5 +10,7 @@
         public int No { get; set; }
         public string Text { get; set; }
         public double Size { get; set; }
+
+        public Bible.RefType Type { get; set; }
     }
 }

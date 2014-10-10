@@ -1,6 +1,6 @@
 ﻿namespace test2
 {
-    partial class Form1
+    partial class frmMain
     {
         /// <summary>
         /// Required designer variable.
@@ -30,7 +30,7 @@
         {
             this.btnExit = new System.Windows.Forms.Button();
             this.btnReadMain = new System.Windows.Forms.Button();
-            this.tabControl1 = new System.Windows.Forms.TabControl();
+            this.tab = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.rtxtMain = new System.Windows.Forms.RichTextBox();
             this.tabPage2 = new System.Windows.Forms.TabPage();
@@ -38,9 +38,13 @@
             this.rtxtReference = new System.Windows.Forms.RichTextBox();
             this.btnReadRef = new System.Windows.Forms.Button();
             this.lblInfo = new System.Windows.Forms.Label();
-            this.tabControl1.SuspendLayout();
+            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.btnPDF = new System.Windows.Forms.Button();
+            this.rtxtPDF = new System.Windows.Forms.RichTextBox();
+            this.tab.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
+            this.tabPage3.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnExit
@@ -63,15 +67,16 @@
             this.btnReadMain.UseVisualStyleBackColor = true;
             this.btnReadMain.Click += new System.EventHandler(this.btnReadMain_Click);
             // 
-            // tabControl1
+            // tab
             // 
-            this.tabControl1.Controls.Add(this.tabPage1);
-            this.tabControl1.Controls.Add(this.tabPage2);
-            this.tabControl1.Location = new System.Drawing.Point(12, 12);
-            this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(656, 479);
-            this.tabControl1.TabIndex = 2;
+            this.tab.Controls.Add(this.tabPage1);
+            this.tab.Controls.Add(this.tabPage2);
+            this.tab.Controls.Add(this.tabPage3);
+            this.tab.Location = new System.Drawing.Point(12, 12);
+            this.tab.Name = "tab";
+            this.tab.SelectedIndex = 0;
+            this.tab.Size = new System.Drawing.Size(656, 479);
+            this.tab.TabIndex = 2;
             // 
             // tabPage1
             // 
@@ -141,22 +146,52 @@
             this.lblInfo.TabIndex = 3;
             this.lblInfo.Text = "status";
             // 
-            // Form1
+            // tabPage3
+            // 
+            this.tabPage3.Controls.Add(this.rtxtPDF);
+            this.tabPage3.Location = new System.Drawing.Point(4, 22);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Size = new System.Drawing.Size(648, 453);
+            this.tabPage3.TabIndex = 2;
+            this.tabPage3.Text = "PDF Fixed";
+            this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // btnPDF
+            // 
+            this.btnPDF.Location = new System.Drawing.Point(246, 497);
+            this.btnPDF.Name = "btnPDF";
+            this.btnPDF.Size = new System.Drawing.Size(107, 23);
+            this.btnPDF.TabIndex = 0;
+            this.btnPDF.Text = "Read &PDF";
+            this.btnPDF.UseVisualStyleBackColor = true;
+            this.btnPDF.Click += new System.EventHandler(this.btnPDF_Click);
+            // 
+            // rtxtPDF
+            // 
+            this.rtxtPDF.Location = new System.Drawing.Point(12, 14);
+            this.rtxtPDF.Name = "rtxtPDF";
+            this.rtxtPDF.Size = new System.Drawing.Size(625, 424);
+            this.rtxtPDF.TabIndex = 3;
+            this.rtxtPDF.Text = "";
+            // 
+            // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(680, 530);
             this.Controls.Add(this.lblInfo);
-            this.Controls.Add(this.tabControl1);
+            this.Controls.Add(this.tab);
+            this.Controls.Add(this.btnPDF);
             this.Controls.Add(this.btnReadRef);
             this.Controls.Add(this.btnReadMain);
             this.Controls.Add(this.btnExit);
-            this.Name = "Form1";
-            this.Text = "Form1";
+            this.Name = "frmMain";
+            this.Text = "Main";
             this.Load += new System.EventHandler(this.Form1_Load);
-            this.tabControl1.ResumeLayout(false);
+            this.tab.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
+            this.tabPage3.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -166,7 +201,7 @@
 
         private System.Windows.Forms.Button btnExit;
         private System.Windows.Forms.Button btnReadMain;
-        private System.Windows.Forms.TabControl tabControl1;
+        private System.Windows.Forms.TabControl tab;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.RichTextBox rtxtMain;
         private System.Windows.Forms.TabPage tabPage2;
@@ -174,6 +209,9 @@
         private System.Windows.Forms.Button btnReadRef;
         private System.Windows.Forms.RichTextBox rtxtFootNote;
         private System.Windows.Forms.Label lblInfo;
+        private System.Windows.Forms.TabPage tabPage3;
+        private System.Windows.Forms.Button btnPDF;
+        private System.Windows.Forms.RichTextBox rtxtPDF;
     }
 }
 
